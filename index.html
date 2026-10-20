@@ -118,7 +118,7 @@ const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다
 - open_slots는 스텁에 덮이지 않고 보이는 칸(주황·노랑·흰색 탭)이 하나라도 있으면 true입니다. 글자가 작아 숫자를 못 읽어도 보이는 탭이 있으면 true로 하세요. 특히 큰 그림 옆의 C처럼 검은 스텁 아래에 작은 주황 탭 "あと1枚"가 남아 있는 경우를 놓치지 마세요. 스텁이 모든 칸을 덮어 탭이 전혀 안 보이면 전부 팔린 것이니 visible은 빈 배열, open_slots는 false로 두고 그 등수도 목록에 포함하세요.
 - 스텁 개수나 전체 수량은 세지 마세요. 보이는 라벨 숫자만 적으세요.
 예시: A에 "あと2枚"와 "あと1枚"가 보이면 {"id":"A","visible":[2,1],"open_slots":true}, 스텁 하나가 유일한 칸을 덮고 있는 C는 {"id":"C","visible":[],"open_slots":false}, 스텁 아래에 작은 주황 탭 "あと1枚"가 남은 C는 {"id":"C","visible":[1],"open_slots":true}.
-등수는 보드에 나온 순서대로 적으세요. JSON만 출력하세요: {"tiers":[{"id":"A","visible":[2,1],"open_slots":true}]}`;
+등수는 보드에 나온 순서대로 적으세요. 결과는 report 도구로 제출하세요.`;
 
 const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
@@ -141,7 +141,9 @@ async function askClaude(key,blob){
       headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
       body:JSON.stringify({
         model:$("acc").checked?MODEL_ACC:MODEL_FAST,
-        max_tokens:400,
+        max_tokens:1500,
+        tools:[{name:"report",description:"등수별로 보이는 라벨과 열린 칸 여부를 제출한다",input_schema:{type:"object",properties:{tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},visible:{type:"array",items:{type:"integer"}},open_slots:{type:"boolean"}},required:["id","visible","open_slots"]}}},required:["tiers"]}}],
+        tool_choice:{type:"tool",name:"report"},
         messages:[{role:"user",content:[
           {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
           {type:"text",text:PROMPT}]}]
@@ -155,11 +157,13 @@ async function askClaude(key,blob){
       throw new Error(m||("오류 "+res.status));
     }
     const d=await res.json();
-    const txt=(d.content||[]).map(c=>c.text||"").join("");
-    const j=txt.match(/\{[\s\S]*\}/);
-    if(!j)throw new Error("결과를 읽지 못했어요");
+    const tu=(d.content||[]).find(c=>c.type==="tool_use");
+    if(!tu||!tu.input||!Array.isArray(tu.input.tiers)){
+      const txt=(d.content||[]).map(c=>c.text||"").join("").slice(0,80);
+      throw new Error("결과를 읽지 못했어요 ("+(d.stop_reason||"?")+") "+txt);
+    }
     say("분석 완료 ("+((Date.now()-t0)/1000).toFixed(1)+"초). 숫자가 틀렸다면 아래에서 고칠 수 있어요.");
-    return JSON.parse(j[0]);
+    return tu.input;
   }catch(e){
     if(e.name==="AbortError")throw new Error("40초가 지나 중단했어요. 다시 시도해 주세요");
     throw e;
