@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.4</title>
+<title>쿠지스캔 v2.5</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -143,14 +143,43 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 .rchip.t3{color:#f4ea60}
 .rchip small{font-size:.5em}
 @media (prefers-reduced-motion:reduce){.pk-h,.pk.done .letter,.pk.done.t1 .glow{animation:none}.pk.done .letter{opacity:1;transform:none}.tk{transition:none}}
+/* ===== v2.5 ===== */
+.tk .lg{position:absolute;left:55%;top:14%;width:17%;aspect-ratio:1;transform:translateX(-50%) rotate(45deg);background:#1e2a78;border:1.5px solid #fff;border-radius:2px}
+.tk.flip{background:linear-gradient(#4a4e6a,#2f3250);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.5);cursor:default;display:grid;place-items:center;font:400 22px/1 "Do Hyeon",sans-serif}
+.tk.flip::before,.tk.flip::after{display:none}
+.tk.flip{display:flex;align-items:center;justify-content:center}
+.tk.flip small{font-size:.5em;margin-left:1px;align-self:flex-end;padding-bottom:3px}
+.tk.flip.t1{color:#ffd84a;text-shadow:0 0 8px rgba(255,120,20,.9)}
+.tk.flip.t2{color:#cdb8ff}
+.tk.flip.t3{color:#f4ea60}
+.pk-face{display:block}
+.pk-face .logo{position:absolute;left:50%;top:9%;width:34%;transform:translateX(-50%);filter:drop-shadow(0 2px 2px rgba(120,50,0,.5))}
+.pk-face .barcode{left:50%;right:auto;width:54%;transform:translateX(-50%);bottom:10%;height:24%;background:#fff;border-radius:4px;padding:0;position:absolute;overflow:hidden}
+.pk-face .barcode::before{content:"";position:absolute;inset:14% 8%;background:repeating-linear-gradient(90deg,#222 0 2px,transparent 2px 4px,#222 4px 7px,transparent 7px 9px,#222 9px 10px,transparent 10px 13px)}
+.letter{opacity:1;transform:none;filter:brightness(.7)}
+.pk.done .letter{filter:none;animation:pop .65s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(.6)}55%{transform:scale(1.28)}100%{transform:scale(1)}}
+.pk.done .glow{animation:burst 1s ease-out}
+.t1{--c1:255,140,30;--c2:255,90,0}.t2{--c1:150,120,255;--c2:100,70,255}.t3{--c1:255,235,90;--c2:220,190,30}
+@keyframes burst{0%{opacity:.95;width:10px;height:10px;box-shadow:0 0 0 0 rgba(var(--c1),.9),0 0 30px 10px rgba(var(--c2),.8)}100%{opacity:0;width:240px;height:240px;box-shadow:0 0 60px 20px rgba(var(--c1),0)}}
+.pk.done.t1{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
+.pkfx{position:absolute;inset:0;pointer-events:none;z-index:3}
+.pkfx i{position:absolute;left:50%;top:58%;border-radius:50%;animation:fly .95s ease-out forwards}
+@keyframes fly{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.2);opacity:0}}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(255,220,120,.85),rgba(255,120,20,.35) 45%,transparent 70%)}
+#flash.on{animation:fl .7s ease-out}
+@keyframes fl{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.pk.done.t1,#flash.on,.pkfx i{animation:none}.pkfx{display:none}}
 </style>
+
 
 </head>
 <body>
 <div class="bg" aria-hidden="true"><i></i><i></i></div><div class="bgshade" aria-hidden="true"></div>
 <main>
 <header class="top">
-  <h1>쿠지 스캐너 <small class="ver">v2.4</small></h1>
+  <h1>쿠지 스캐너 <small class="ver">v2.5</small></h1>
   <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
   </button>
@@ -219,9 +248,15 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
     <div class="pk" id="pk">
       <div class="pk-under"><div class="pk-inner"><div class="stripe"></div><div class="glow"></div><div class="letter" id="pkLetter"></div></div></div>
       <div class="pk-wrap"><div class="pk-face" id="pkFace">
-        <div class="brand">오늘의 운세<small>KUJI</small></div>
+        <svg class="logo" viewBox="0 0 120 84" aria-hidden="true">
+          <path d="M60 3 L113 42 L60 81 L7 42 Z" fill="#fff"/>
+          <path d="M60 10 L104 42 L60 74 L16 42 Z" fill="#1e2a78"/>
+          <path d="M60 16 L97 42 L60 68 L23 42 Z" fill="none" stroke="#f2c23a" stroke-width="2"/>
+          <text x="60" y="52" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans KR',sans-serif">くじ</text>
+        </svg>
         <div class="barcode"></div>
       </div></div>
+      <div class="pkfx" id="pkFx"></div>
       <div class="pk-h" id="pkH" aria-hidden="true">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="#3340d8"><path d="M4 9h9V4l8 8-8 8v-5H4z"/></svg>
       </div>
@@ -243,6 +278,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
   </div>
 </section>
 </main>
+<div id="flash" aria-hidden="true"></div>
 
 <script>
 const S={tiers:[],cut:-1,imgs:[]};
@@ -500,13 +536,20 @@ $("out").addEventListener("click",e=>{
 /* ---------- 오늘의 운세 (무료 모의 쿠지) ---------- */
 const FT={A:2,B:2,C:2,D:2,E:3,F:3,G:18,H:20,I:20};         // 합계 72장 (6 × 12)
 const COLS=6,ROWS=12;
-const F={n:1,board:[],sel:[],idx:0,results:[]};
+const F={n:1,board:[],flip:new Set(),sel:[],idx:0,results:[]};
 const tierClass=t=>"ABCD".includes(t)?"t1":"EF".includes(t)?"t2":"t3";
 const rnd=n=>{const u=new Uint32Array(1);crypto.getRandomValues(u);return Math.floor(u[0]/4294967296*n)}; // 0..n-1
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function fStep(name){["fCount","fBoard","fOpen","fResult"].forEach(id=>$(id).hidden=id!==name);window.scrollTo(0,0)}
 
-function startFortune(){F.n=Math.min(F.n,5)||1;$("cNum").textContent=F.n;fStep("fCount");show("fortune")}
+function newRound(){
+  const tiers=[];Object.entries(FT).forEach(([k,c])=>{for(let i=0;i<c;i++)tiers.push(k)});
+  F.board=shuffle(tiers);                                         // 자리별 상(알파벳)을 무작위로 확정
+  const k=10+rnd(21);                                             // 10~30장은 미리 뒤집혀 있음
+  F.flip=new Set(shuffle([...Array(F.board.length).keys()]).slice(0,k));
+  F.sel=[];F.idx=0;F.results=[];
+}
+function startFortune(){newRound();F.n=Math.min(F.n,5)||1;$("cNum").textContent=F.n;fStep("fCount");show("fortune")}
 function setN(n){F.n=Math.max(1,Math.min(5,n));$("cNum").textContent=F.n}
 $("cMinus").addEventListener("click",()=>setN(F.n-1));
 $("cPlus").addEventListener("click",()=>setN(F.n+1));
@@ -514,18 +557,19 @@ document.querySelectorAll(".qbtn").forEach(b=>b.addEventListener("click",()=>set
 $("cOk").addEventListener("click",buildBoard);
 
 function buildBoard(){
-  const tiers=[];Object.entries(FT).forEach(([k,c])=>{for(let i=0;i<c;i++)tiers.push(k)});
-  F.board=shuffle(tiers);F.sel=[];F.idx=0;F.results=[];
-  $("grid").innerHTML=F.board.map((_,i)=>'<button class="tk" data-i="'+i+'" aria-pressed="false" aria-label="쿠폰 '+(i+1)+'번"><i>✓</i></button>').join("");
+  F.sel=[];F.idx=0;F.results=[];
+  $("grid").innerHTML=F.board.map((t,i)=>F.flip.has(i)
+    ?'<div class="tk flip '+tierClass(t)+'" role="img" aria-label="이미 열린 쿠폰 '+(i+1)+'번: '+t+'상">'+t+'<small>상</small></div>'
+    :'<button class="tk" data-i="'+i+'" aria-pressed="false" aria-label="쿠폰 '+(i+1)+'번"><b class="lg"></b><i>✓</i></button>').join("");
   updBoard();fStep("fBoard");
 }
 function updBoard(msg){
-  document.querySelectorAll(".tk").forEach(b=>{const on=F.sel.includes(+b.dataset.i);b.classList.toggle("sel",on);b.setAttribute("aria-pressed",on)});
+  document.querySelectorAll(".tk:not(.flip)").forEach(b=>{const on=F.sel.includes(+b.dataset.i);b.classList.toggle("sel",on);b.setAttribute("aria-pressed",on)});
   $("bCount").textContent=msg||(F.sel.length+"/"+F.n+"개의 쿠폰이 선택되었습니다.");
   $("bStart").disabled=F.sel.length!==F.n;
 }
 $("grid").addEventListener("click",e=>{
-  const b=e.target.closest(".tk");if(!b)return;
+  const b=e.target.closest(".tk");if(!b||b.classList.contains("flip"))return;
   const i=+b.dataset.i,at=F.sel.indexOf(i);
   if(at>=0)F.sel.splice(at,1);                                  // 이미 고른 것 → 취소
   else if(F.sel.length<F.n)F.sel.push(i);
@@ -533,7 +577,7 @@ $("grid").addEventListener("click",e=>{
   updBoard();
 });
 $("bRand").addEventListener("click",()=>{                        // 누를 때마다 처음부터 다시 무작위로 뽑음
-  const all=[...Array(F.board.length).keys()];
+  const all=[...Array(F.board.length).keys()].filter(i=>!F.flip.has(i));   // 이미 뒤집힌 것은 제외
   F.sel=shuffle(all).slice(0,F.n);updBoard();
 });
 $("bStart").addEventListener("click",()=>{F.idx=0;F.results=[];loadTicket();fStep("fOpen")});
@@ -563,19 +607,32 @@ function loadTicket(){
 }
 function finish(){
   if(isDone)return;isDone=true;setP(1);
-  pk.classList.add("done");
+  pk.classList.add("done");burst(tierClass(F.board[F.sel[F.idx]]));
   F.results.push(F.board[F.sel[F.idx]]);
   $("oBtns").hidden=true;
   const last=F.idx>=F.n-1;
   $("oNext").textContent=last?"결과 보기":"다음 쿠폰";$("oNext").hidden=false;$("oNext").focus({preventScroll:true});
+}
+function burst(tc){
+  const fx=$("pkFx");fx.innerHTML="";
+  const n=tc==="t1"?34:tc==="t2"?20:12;
+  const cols={t1:["#ffd84a","#ff7a1a","#fff3a0","#ff4a1a"],t2:["#cdb8ff","#7a5cff","#ffffff"],t3:["#f4ea60","#fff6a0","#ffe14a"]}[tc];
+  const R=tc==="t1"?[90,210]:tc==="t2"?[70,150]:[55,115];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,d=R[0]+Math.random()*(R[1]-R[0]),z=4+Math.random()*(tc==="t1"?7:5),e=document.createElement("i");
+    e.style.cssText="--dx:"+(Math.cos(a)*d).toFixed(0)+"px;--dy:"+(Math.sin(a)*d).toFixed(0)+"px;width:"+z.toFixed(1)+"px;height:"+z.toFixed(1)+"px;background:"+cols[i%cols.length]+";box-shadow:0 0 6px "+cols[i%cols.length]+";animation-delay:"+(Math.random()*0.12).toFixed(2)+"s";
+    fx.appendChild(e);
+  }
+  if(tc==="t1"){const f=$("flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on")}
+  if(navigator.vibrate)try{navigator.vibrate(tc==="t1"?[60,40,90]:30)}catch(_){}
 }
 function autoPeel(ms){
   cancelAnimationFrame(anim);const p0=P,t0=performance.now(),d=Math.max(250,ms*(1-p0));
   (function step(t){const k=Math.min(1,(t-t0)/d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;setP(p0+(1-p0)*e);k<1?anim=requestAnimationFrame(step):finish()})(t0);
 }
 pk.addEventListener("pointerdown",e=>{if(isDone)return;cancelAnimationFrame(anim);drag={x:e.clientX,p:P};pk.setPointerCapture(e.pointerId)});
-pk.addEventListener("pointermove",e=>{if(!drag||isDone)return;const np=drag.p+(e.clientX-drag.x)/(pk.clientWidth*0.8);if(np>P)setP(np)});
-const endDrag=()=>{if(!drag)return;drag=null;if(P>=0.9&&!isDone)autoPeel(250)};
+pk.addEventListener("pointermove",e=>{if(!drag||isDone)return;const np=drag.p+(e.clientX-drag.x)/(pk.clientWidth*0.8);if(np>P){setP(np);if(P>=0.7){drag=null;autoPeel(380)}}});
+const endDrag=()=>{if(!drag)return;drag=null;if(P>=0.7&&!isDone)autoPeel(380)};
 pk.addEventListener("pointerup",endDrag);pk.addEventListener("pointercancel",endDrag);
 $("oOpen").addEventListener("click",()=>autoPeel(1400));
 $("oAuto").addEventListener("click",()=>{                         // 남은 쿠폰을 한 번에 모두 오픈
@@ -591,7 +648,7 @@ function showResult(){
   $("rMsg").textContent=top?("A~D상이 "+top+"개 나왔어요! 오늘은 운이 좋네요."):"이번에는 아쉬웠어요. 다시 도전해 보세요.";
   fStep("fResult");
 }
-$("rAgain").addEventListener("click",()=>fStep("fCount"));
+$("rAgain").addEventListener("click",()=>{newRound();fStep("fCount")});
 $("rHome").addEventListener("click",()=>{show("home")});
 
 syncKey("home");
