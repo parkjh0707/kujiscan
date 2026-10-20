@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.5</title>
+<title>쿠지스캔 v2.6</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -143,7 +143,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 .rchip.t3{color:#f4ea60}
 .rchip small{font-size:.5em}
 @media (prefers-reduced-motion:reduce){.pk-h,.pk.done .letter,.pk.done.t1 .glow{animation:none}.pk.done .letter{opacity:1;transform:none}.tk{transition:none}}
-/* ===== v2.5 ===== */
+/* ===== v2.6 ===== */
 .tk .lg{position:absolute;left:55%;top:14%;width:17%;aspect-ratio:1;transform:translateX(-50%) rotate(45deg);background:#1e2a78;border:1.5px solid #fff;border-radius:2px}
 .tk.flip{background:linear-gradient(#4a4e6a,#2f3250);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.5);cursor:default;display:grid;place-items:center;font:400 22px/1 "Do Hyeon",sans-serif}
 .tk.flip::before,.tk.flip::after{display:none}
@@ -171,7 +171,18 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 #flash.on{animation:fl .7s ease-out}
 @keyframes fl{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.pk.done.t1,#flash.on,.pkfx i{animation:none}.pkfx{display:none}}
+/* ===== v2.6 ===== */
+html{touch-action:manipulation}
+.kind{position:relative;display:flex;align-items:flex-end;min-height:108px;padding:16px;color:#fff;border:1.5px solid rgba(255,255,255,.35);background-size:cover;background-position:center 30%;background-color:#14102a;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.kind b{font-size:28px;text-shadow:0 2px 8px rgba(0,0,0,.9)}
+.kind[data-go="ichiban"]{background-image:linear-gradient(0deg,rgba(8,6,20,.8),rgba(8,6,20,.1) 70%),url(bg/btn1.jpg)}
+.kind[data-go="jache"]{background-image:linear-gradient(0deg,rgba(8,6,20,.8),rgba(8,6,20,.1) 70%),url(bg/btn2.jpg);background-position:center 35%}
+.kind[data-go="fortune"]{background-image:linear-gradient(0deg,rgba(8,6,20,.8),rgba(8,6,20,.1) 70%),url(bg/btn3.jpg);background-position:center 40%}
+.pkfx{filter:drop-shadow(0 0 4px rgba(255,255,255,.9))}
+.pkfx .sp{position:absolute;background:#fff;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);transform:translate(-50%,-50%);animation:tw .9s ease-out forwards}
+@keyframes tw{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}35%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(25deg)}100%{opacity:0;transform:translate(-50%,-72%) scale(.3) rotate(70deg)}}
 </style>
+
 
 
 </head>
@@ -179,7 +190,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 <div class="bg" aria-hidden="true"><i></i><i></i></div><div class="bgshade" aria-hidden="true"></div>
 <main>
 <header class="top">
-  <h1>쿠지 스캐너 <small class="ver">v2.5</small></h1>
+  <h1>쿠지 스캐너 <small class="ver">v2.6</small></h1>
   <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
   </button>
@@ -221,7 +232,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
   <!-- 1) 횟수 선택 -->
   <div id="fCount" class="glass fcount">
     <h2>참여 횟수를 정해주세요.</h2>
-    <p class="hint2">최대 5개까지 고를 수 있어요. 무료로 즐기는 모의 쿠지예요.</p>
+    <p class="hint2">최대 5개까지 고를 수 있어요.<br>무료로 즐기는 모의쿠지예요.</p>
     <div class="cnt">
       <button class="qbtn" data-q="1" aria-label="1개로 설정">1</button>
       <button class="pm" id="cMinus" aria-label="하나 줄이기">−</button>
@@ -304,7 +315,7 @@ document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=
   if(b.dataset.go==="fortune"){startFortune();return}
   MODE=b.dataset.go;$("scanTitle").textContent=CFG[MODE].title;show("scan");
 }));
-$("homeBtn").addEventListener("click",()=>{reset();cancelAnimationFrame(anim);show("home")});
+$("homeBtn").addEventListener("click",()=>{reset();cancelAnimationFrame(anim);stopSparks();show("home")});
 
 /* ---------- API 키 (저장돼 있으면 다시 보이지 않음) ---------- */
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
@@ -549,7 +560,7 @@ function newRound(){
   F.flip=new Set(shuffle([...Array(F.board.length).keys()]).slice(0,k));
   F.sel=[];F.idx=0;F.results=[];
 }
-function startFortune(){newRound();F.n=Math.min(F.n,5)||1;$("cNum").textContent=F.n;fStep("fCount");show("fortune")}
+function startFortune(){newRound();stopSparks();F.n=1;$("cNum").textContent=F.n;fStep("fCount");show("fortune")}
 function setN(n){F.n=Math.max(1,Math.min(5,n));$("cNum").textContent=F.n}
 $("cMinus").addEventListener("click",()=>setN(F.n-1));
 $("cPlus").addEventListener("click",()=>setN(F.n+1));
@@ -585,6 +596,18 @@ $("bStart").addEventListener("click",()=>{F.idx=0;F.results=[];loadTicket();fSte
 /* 뜯기 */
 const pk=$("pk"),face=$("pkFace"),hdl=$("pkH");
 let P=0,drag=null,isDone=false,anim=0;
+let sparkT=0;
+function spawnSpark(){
+  const fx=$("pkFx");if(fx.children.length>40)return;
+  for(let k=0;k<2;k++){
+    const e=document.createElement("span");e.className="sp";
+    const ex=P*106-3,x=Math.random()<.5?ex-10+Math.random()*20:-8+Math.random()*116,y=-14+Math.random()*128,z=7+Math.random()*12;
+    e.style.cssText="left:"+x.toFixed(1)+"%;top:"+y.toFixed(1)+"%;width:"+z.toFixed(1)+"px;height:"+z.toFixed(1)+"px;animation-delay:"+(Math.random()*.15).toFixed(2)+"s";
+    e.addEventListener("animationend",()=>e.remove());fx.appendChild(e);
+  }
+}
+function startSparks(){if(!sparkT)sparkT=setInterval(spawnSpark,80)}
+function stopSparks(){clearInterval(sparkT);sparkT=0}
 function setP(p){
   P=Math.max(0,Math.min(1,p));
   if(P<=0.001)face.style.clipPath="none";
@@ -594,10 +617,10 @@ function setP(p){
     face.style.clipPath="polygon("+pts.join(",")+",100% 100%,100% 0)";
   }
   hdl.style.left=Math.min(96,Math.max(11,P*106+5))+"%";
-  if(P>0.02)pk.classList.add("moved");
+  if(P>0.02){pk.classList.add("moved");if(!isDone)startSparks()}
 }
 function loadTicket(){
-  cancelAnimationFrame(anim);
+  cancelAnimationFrame(anim);stopSparks();$("pkFx").innerHTML="";
   const t=F.board[F.sel[F.idx]];
   pk.className="pk "+tierClass(t);
   $("pkLetter").innerHTML=t+"<small>상</small>";
@@ -606,7 +629,7 @@ function loadTicket(){
   $("oBtns").hidden=false;$("oNext").hidden=true;
 }
 function finish(){
-  if(isDone)return;isDone=true;setP(1);
+  if(isDone)return;isDone=true;stopSparks();setP(1);
   pk.classList.add("done");burst(tierClass(F.board[F.sel[F.idx]]));
   F.results.push(F.board[F.sel[F.idx]]);
   $("oBtns").hidden=true;
@@ -631,8 +654,8 @@ function autoPeel(ms){
   (function step(t){const k=Math.min(1,(t-t0)/d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;setP(p0+(1-p0)*e);k<1?anim=requestAnimationFrame(step):finish()})(t0);
 }
 pk.addEventListener("pointerdown",e=>{if(isDone)return;cancelAnimationFrame(anim);drag={x:e.clientX,p:P};pk.setPointerCapture(e.pointerId)});
-pk.addEventListener("pointermove",e=>{if(!drag||isDone)return;const np=drag.p+(e.clientX-drag.x)/(pk.clientWidth*0.8);if(np>P){setP(np);if(P>=0.7){drag=null;autoPeel(380)}}});
-const endDrag=()=>{if(!drag)return;drag=null;if(P>=0.7&&!isDone)autoPeel(380)};
+pk.addEventListener("pointermove",e=>{if(!drag||isDone)return;const np=drag.p+(e.clientX-drag.x)/(pk.clientWidth*0.8);if(np>P)setP(np)});
+const endDrag=()=>{if(!drag)return;drag=null;if(P>0.015&&!isDone)autoPeel(450)};
 pk.addEventListener("pointerup",endDrag);pk.addEventListener("pointercancel",endDrag);
 $("oOpen").addEventListener("click",()=>autoPeel(1400));
 $("oAuto").addEventListener("click",()=>{                         // 남은 쿠폰을 한 번에 모두 오픈
@@ -652,6 +675,10 @@ $("rAgain").addEventListener("click",()=>{newRound();fStep("fCount")});
 $("rHome").addEventListener("click",()=>{show("home")});
 
 syncKey("home");
+
+/* ---------- 확대(더블탭/핀치) 막기 ---------- */
+document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false});
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 
 /* ---------- 배경 슬라이드 (5초마다 부드럽게 교체) ---------- */
 (function(){
