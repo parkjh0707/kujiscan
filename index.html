@@ -128,26 +128,39 @@ $("saveKey").addEventListener("click",()=>{
 $("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_gkey")}catch(_){}say("키를 삭제했어요.")});
 
 const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
+const callGemini=(key,b64,cfg,signal)=>fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
+  method:"POST",signal,
+  headers:{"content-type":"application/json","x-goog-api-key":key},
+  body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:cfg})
+});
 async function askClaude(key,blob){
-  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
-    method:"POST",
-    headers:{"content-type":"application/json","x-goog-api-key":key},
-    body:JSON.stringify({
-      contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:await toB64(blob)}},{text:PROMPT}]}],
-      generationConfig:{temperature:0,responseMimeType:"application/json"}
-    })
-  });
-  if(!res.ok){
-    let m="";try{m=(await res.json()).error.message}catch(_){}
-    if(res.status===429)throw new Error("무료 사용 한도에 걸렸어요. 잠시 후 다시 시도해 주세요");
-    if(res.status===400&&/API key/i.test(m)||res.status===403)throw new Error("API 키가 올바르지 않거나 권한이 없어요");
-    throw new Error(m||("오류 "+res.status));
-  }
-  const d=await res.json();
-  const txt=((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
-  const j=txt.match(/\{[\s\S]*\}/);
-  if(!j)throw new Error("결과를 읽지 못했어요");
-  return JSON.parse(j[0]);
+  const b64=await toB64(blob);
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),75000);
+  const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),1000);
+  try{
+    const base={temperature:0,responseMimeType:"application/json"};
+    // 생각(thinking) 시간을 제한해서 오래 걸리지 않게 함. 모델이 이 설정을 거부하면 설정 없이 다시 요청
+    let res=await callGemini(key,b64,{...base,thinkingConfig:{thinkingBudget:1024}},ctl.signal);
+    if(res.status===400){
+      const t=await res.clone().text();
+      if(/think/i.test(t))res=await callGemini(key,b64,base,ctl.signal);
+    }
+    if(!res.ok){
+      let m="";try{m=(await res.json()).error.message}catch(_){}
+      if(res.status===429)throw new Error("무료 사용 한도에 걸렸어요. 잠시 후 다시 시도해 주세요");
+      if(res.status===503)throw new Error("구글 서버가 바빠요. 잠시 후 다시 시도해 주세요");
+      if(res.status===400&&/API key/i.test(m)||res.status===403)throw new Error("API 키가 올바르지 않거나 권한이 없어요");
+      throw new Error(m||("오류 "+res.status));
+    }
+    const d=await res.json();
+    const txt=((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+    const j=txt.match(/\{[\s\S]*\}/);
+    if(!j)throw new Error("결과를 읽지 못했어요");
+    return JSON.parse(j[0]);
+  }catch(e){
+    if(e.name==="AbortError")throw new Error("75초가 지나 중단했어요. 다시 시도하거나 MODEL을 gemini-2.5-flash로 바꿔 보세요");
+    throw e;
+  }finally{clearTimeout(timer);clearInterval(tick)}
 }
 
 $("go").addEventListener("click",async()=>{
