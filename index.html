@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.2</title>
+<title>쿠지스캔 v2.3</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -15,7 +15,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Noto Sans KR","Apple SD Gothic Neo",sans-serif}
+body{margin:0;background:#0b0a14;color:var(--ink);font:400 16px/1.5 "Noto Sans KR","Apple SD Gothic Neo",sans-serif}
 main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
 h1{font:400 30px/1.1 "Do Hyeon","Noto Sans KR",sans-serif;margin:8px 0 4px}
 .ver{font:700 13px "Noto Sans KR",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
@@ -67,12 +67,22 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 .step button{width:36px;height:36px;padding:0;font-size:18px;background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .step output{min-width:22px;text-align:center;font-weight:700}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+/* 배경 슬라이드 */
+.bg{position:fixed;inset:0;z-index:-2;background:#0b0a14}
+.bg i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.6s ease-in-out}
+.bg i.on{opacity:1}
+.bgshade{position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,8,22,.55),rgba(10,8,22,.35) 40%,rgba(10,8,22,.6))}
+.top h1,.sub,#scanTitle{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.ver{color:#e8e2f7;border-color:rgba(255,255,255,.45)}
+.icon{background:rgba(20,16,40,.55);color:#fff;border-color:rgba(255,255,255,.4);backdrop-filter:blur(6px)}
+@media (prefers-reduced-motion:reduce){.bg i{transition:none}}
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><i></i><i></i></div><div class="bgshade" aria-hidden="true"></div>
 <main>
 <header class="top">
-  <h1>쿠지 스캐너 <small class="ver">v2.2</small></h1>
+  <h1>쿠지 스캐너 <small class="ver">v2.3</small></h1>
   <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
   </button>
@@ -347,6 +357,23 @@ $("out").addEventListener("click",e=>{
   else if(b.dataset.i!==undefined){const t=S.tiers[+b.dataset.i];t.remaining=Math.max(0,t.remaining+ +b.dataset.d)}
   render();
 });
+
+/* ---------- 배경 슬라이드 (5초마다 부드럽게 교체) ---------- */
+(function(){
+  const imgs=["bg/bg1.jpg","bg/bg2.jpg","bg/bg3.jpg","bg/bg4.jpg","bg/bg5.jpg"];
+  const layers=document.querySelectorAll(".bg i");
+  imgs.forEach(u=>{const im=new Image();im.src=u});          // 미리 불러오기
+  let idx=0,front=0;
+  layers[0].style.backgroundImage='url("'+imgs[0]+'")';layers[0].classList.add("on");
+  setInterval(()=>{
+    if(document.hidden)return;
+    idx=(idx+1)%imgs.length;
+    const next=layers[1-front],cur=layers[front];
+    next.style.backgroundImage='url("'+imgs[idx]+'")';
+    next.classList.add("on");cur.classList.remove("on");     // 새 그림은 서서히 나타나고 이전 그림은 서서히 사라짐
+    front=1-front;
+  },5000);
+})();
 </script>
 </body>
 </html>
