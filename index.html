@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔</title>
+<title>쿠지스캔 v1.0</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -57,11 +57,12 @@ details.card summary{font-weight:700;cursor:pointer}
 input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
 .keybtns{display:flex;gap:8px}.keybtns button{flex:1}
 .acc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--mute)}
+.ver{font:700 13px "Noto Sans KR",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
 </style>
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너</h1>
+<h1>쿠지 스캐너 <small class="ver">v1.0</small></h1>
 <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
 
 <details class="card" id="keybox">
@@ -100,7 +101,8 @@ async function shrink(file){
 }
 
 $("file").addEventListener("change",async e=>{
-  const f=e.target.files[0];if(!f)return;
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  S.tiers=[];S.cut=-1;$("out").innerHTML="";say("");
   try{
     S.blob=await shrink(f);
     $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.blob)+'">';
@@ -108,17 +110,17 @@ $("file").addEventListener("change",async e=>{
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
-const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)별로 아직 팔리지 않은 티켓 수를 알기 위해, 눈에 보이는 "あと N枚"(N장 남음) 라벨을 모두 찾아주세요.
-라스트원(ラストワン賞, Last One)은 뽑는 티켓이 아니므로 제외하세요. 사진 가장자리에 걸친 옆 포스터(다른 쿠지)는 무시하세요.
+const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 팔린 티켓은 스텁(검은 반쪽 티켓) 또는 빨간 終了 스티커가 그 칸 위에 붙어 칸을 가립니다. 목표는 등수별로 "덮이지 않은 빈 칸"의 개수, 즉 아직 안 팔린 티켓 수를 구하는 것입니다.
 규칙:
-- 각 등수 칸에는 "あと N枚" 라벨이 인쇄되어 있고, 팔린 티켓의 스텁(검은 반쪽 티켓)이 붙으면 그 라벨이 가려집니다. 따라서 보이는 라벨 중 가장 큰 N이 남은 수량입니다.
-- 한 등수의 라벨이 여러 블록으로 나뉘어 있을 수 있습니다. 예를 들어 E는 한 블록에 "あと6枚"부터 "あと1枚"가 있고, 그 아래 다른 블록에 "あと10枚, 9枚, 8枚, 7枚"가 이어집니다. 이럴 땐 모든 블록의 숫자를 적어야 합니다. 등수의 스텁 줄 위아래와 좌우를 모두 훑으세요.
-- 정상이라면 보이는 숫자는 1부터 N까지 빠짐없이 이어집니다. 빠진 숫자가 있으면 그 사이를 다시 찾아보세요.
-- A, B, D처럼 큰 글자 옆에 "あと2枚" "あと1枚"가 따로 적힌 등수도 같은 규칙입니다.
-- open_slots는 스텁에 덮이지 않고 보이는 칸(주황·노랑·흰색 탭)이 하나라도 있으면 true입니다. 글자가 작아 숫자를 못 읽어도 보이는 탭이 있으면 true로 하세요. 특히 큰 그림 옆의 C처럼 검은 스텁 아래에 작은 주황 탭 "あと1枚"가 남아 있는 경우를 놓치지 마세요. 스텁이 모든 칸을 덮어 탭이 전혀 안 보이면 전부 팔린 것이니 visible은 빈 배열, open_slots는 false로 두고 그 등수도 목록에 포함하세요.
-- 스텁 개수나 전체 수량은 세지 마세요. 보이는 라벨 숫자만 적으세요.
-예시: A에 "あと2枚"와 "あと1枚"가 보이면 {"id":"A","visible":[2,1],"open_slots":true}, 스텁 하나가 유일한 칸을 덮고 있는 C는 {"id":"C","visible":[],"open_slots":false}, 스텁 아래에 작은 주황 탭 "あと1枚"가 남은 C는 {"id":"C","visible":[1],"open_slots":true}.
-등수는 보드에 나온 순서대로 적으세요. 결과는 report 도구로 제출하세요.`;
+- 각 칸에는 번호가 인쇄되어 있습니다("あと N枚"처럼 N장 남음 카운트다운이거나, 1, 2, 3… 일련번호). 스티커가 붙지 않은 칸의 번호를 모두 visible 배열에 적으세요. 스티커로 덮여 번호가 안 보이는 칸은 적지 않습니다. 남은 수량은 이 배열의 길이로 계산하므로, 번호의 크기가 아니라 덮이지 않은 칸을 하나도 빠짐없이 적는 것이 중요합니다.
+- 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있습니다. 번호가 18까지 있어도 10칸이 덮였으면 visible은 8개입니다. 번호의 최댓값으로 판단하지 마세요.
+- 칸이 여러 줄이나 여러 블록으로 이어져 있으면 모두 훑으세요(예: 윗줄 1~9, 아랫줄 10~18).
+- 펜으로 손으로 쓴 글씨(예: "1~2", "8~25", "대리판매", 가격, 메모)는 사장님 메모이므로 완전히 무시하세요. 칸 안에 인쇄된 번호만 쓰세요.
+- 스티커가 모든 칸을 덮어 빈 칸이 없으면 visible은 빈 배열입니다(전부 팔림). 그 등수도 목록에 포함하세요.
+- open_slots는 덮이지 않은 칸이 하나라도 보이면 true입니다. 글자가 작아 번호를 못 읽어도 덮이지 않은 칸이 보이면 true로 하세요.
+- 라스트원(ラストワン賞, Last One)은 제외하고, 옆 포스터(다른 쿠지)는 무시하세요.
+예시: 두 칸(1, 2)이 모두 비어 있는 A → {"id":"A","visible":[1,2],"open_slots":true}. 두 칸 모두 스티커로 덮인 B → {"id":"B","visible":[],"open_slots":false}. 18칸 중 1~10번이 덮이고 11~18번이 비어 있는 E → {"id":"E","visible":[11,12,13,14,15,16,17,18],"open_slots":true}.
+등수는 보드에 나온 순서대로 적고, 결과는 report 도구로 제출하세요.`;
 
 const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
@@ -171,12 +173,12 @@ async function askClaude(key,blob){
 }
 
 $("go").addEventListener("click",async()=>{
-  $("go").disabled=true;say("분석하는 중이에요…");
+  $("go").disabled=true;S.tiers=[];S.cut=-1;$("out").innerHTML="";say("분석하는 중이에요…");
   try{
     const key=getKey();
     if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
     const r=await askClaude(key,S.blob);
-    const t=(r&&r.tiers||[]).map(x=>({id:String(x.id),remaining:(v=>v.length?Math.max(...v):(x.open_slots?1:0))((x.visible||[]).map(Number).filter(n=>n>0))}))
+    const t=(r&&r.tiers||[]).map(x=>({id:String(x.id),remaining:(v=>v.size?v.size:(x.open_slots?1:0))(new Set((x.visible||[]).map(Number).filter(n=>n>0)))}))
       .filter(x=>!/라스트|ラスト|last|^LO$/i.test(x.id));
     
 if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
