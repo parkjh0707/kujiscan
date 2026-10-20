@@ -1,11 +1,73 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
   <title>쿠지스캔</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      background: #f5f6fa; color: #171923;
+      font-family: Arial, sans-serif;
+    }
+    h1 { margin-bottom: 8px; }
+    .card {
+      background: white; padding: 20px;
+      border-radius: 18px; margin-top: 20px;
+    }
+    label { display: block; margin-top: 16px; }
+    input, button {
+      width: 100%; padding: 13px;
+      margin-top: 8px; font-size: 16px;
+      border-radius: 10px;
+    }
+    input { border: 1px solid #ddd; }
+    button {
+      border: 0; background: #2563eb;
+      color: white; font-weight: bold;
+    }
+    #result { font-size: 24px; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h1>쿠지스캔 앱 준비 중</h1>
+  <h1>KUJISCAN</h1>
+  <p>남은 쿠지의 당첨 확률을 확인해 보세요.</p>
+
+  <div class="card">
+    <h2>쿠지판 정보 입력</h2>
+
+    <label for="total">전체 남은 제비 수</label>
+    <input id="total" type="number" min="1" value="50">
+
+    <label for="prizes">내가 원하는 상품의 남은 수</label>
+    <input id="prizes" type="number" min="0" value="1">
+
+    <button onclick="calculate()">당첨 확률 계산</button>
+
+    <p id="result">확률을 계산해 보세요.</p>
+  </div>
+
+  <script>
+    function calculate() {
+      const total = Number(document.getElementById("total").value);
+      const prizes = Number(document.getElementById("prizes").value);
+      const result = document.getElementById("result");
+
+      if (
+        !Number.isInteger(total) || total < 1 ||
+        !Number.isInteger(prizes) ||
+        prizes < 0 || prizes > total
+      ) {
+        result.textContent = "올바른 수량을 입력해 주세요.";
+        return;
+      }
+
+      const probability = prizes / total * 100;
+      result.textContent = `당첨 확률 ${probability.toFixed(2)}%`;
+    }
+  </script>
 </body>
 </html>
