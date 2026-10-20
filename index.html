@@ -55,6 +55,7 @@ h2{font:400 20px "Do Hyeon","Noto Sans KR",sans-serif;margin:0 0 4px}
 details.card summary{font-weight:700;cursor:pointer}
 input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
 .keybtns{display:flex;gap:8px}.keybtns button{flex:1}
+.acc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -75,6 +76,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
     <span id="dropText">회수 부착표 사진 찍기 · 선택하기</span>
   </label>
   <button class="go" id="go" disabled>사진 분석하기</button>
+  <label class="acc"><input type="checkbox" id="acc"> 정밀 모드 (느리지만 더 정확)</label>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
 </section>
 
@@ -89,11 +91,11 @@ const say=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":
 
 async function shrink(file){
   const b=await createImageBitmap(file);
-  const k=Math.min(1,2000/Math.max(b.width,b.height));
+  const k=Math.min(1,1600/Math.max(b.width,b.height));
   const c=document.createElement("canvas");
   c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);
   c.getContext("2d").drawImage(b,0,0,c.width,c.height);
-  return new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+  return new Promise(r=>c.toBlob(r,"image/jpeg",.8));
 }
 
 $("file").addEventListener("change",async e=>{
@@ -101,7 +103,7 @@ $("file").addEventListener("change",async e=>{
   try{
     S.blob=await shrink(f);
     $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.blob)+'">';
-    $("go").disabled=false;say("");
+    $("go").disabled=false;say("");$("go").click();
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
@@ -117,7 +119,8 @@ const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다
 예시: A에 "あと2枚"와 "あと1枚"가 보이면 {"id":"A","visible":[2,1],"open_slots":true}, 스텁 하나가 유일한 칸을 덮고 있는 C는 {"id":"C","visible":[],"open_slots":false}, 스텁 아래에 작은 주황 탭 "あと1枚"가 남은 C는 {"id":"C","visible":[1],"open_slots":true}.
 등수는 보드에 나온 순서대로 적으세요. JSON만 출력하세요: {"tiers":[{"id":"A","visible":[2,1],"open_slots":true}]}`;
 
-const MODEL="gemini-flash-latest"; // 모델명이 바뀌면 여기만 수정 (AI Studio에서 확인)
+const MODEL="gemini-2.5-flash"; // 빠른 기본 모델. 모델명이 바뀌면 여기만 수정
+const FALLBACK="gemini-flash-latest"; // 위 모델이 없을 때 대신 사용
 const getKey=()=>{try{return localStorage.getItem("kuji_gkey")||""}catch(_){return ""}};
 if(!getKey())$("keybox").open=true;
 $("saveKey").addEventListener("click",()=>{
@@ -128,22 +131,26 @@ $("saveKey").addEventListener("click",()=>{
 $("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_gkey")}catch(_){}say("키를 삭제했어요.")});
 
 const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
-const callGemini=(key,b64,cfg,signal)=>fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
+const callGemini=(model,key,b64,cfg,signal)=>fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
   method:"POST",signal,
   headers:{"content-type":"application/json","x-goog-api-key":key},
   body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:cfg})
 });
 async function askClaude(key,blob){
   const b64=await toB64(blob);
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),75000);
-  const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),1000);
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),45000);
+  const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),500);
   try{
     const base={temperature:0,responseMimeType:"application/json"};
-    // 생각(thinking) 시간을 제한해서 오래 걸리지 않게 함. 모델이 이 설정을 거부하면 설정 없이 다시 요청
-    let res=await callGemini(key,b64,{...base,thinkingConfig:{thinkingBudget:1024}},ctl.signal);
-    if(res.status===400){
+    // 기본은 생각 시간 0(빠름). 정밀 모드를 켜면 생각 시간을 조금 줌
+    const withT={...base,thinkingConfig:{thinkingBudget:$("acc").checked?1024:0}};
+    const tries=[[MODEL,withT],[MODEL,base],[FALLBACK,base]];
+    let res;
+    for(const [m,c] of tries){
+      res=await callGemini(m,key,b64,c,ctl.signal);
+      if(res.ok)break;
       const t=await res.clone().text();
-      if(/think/i.test(t))res=await callGemini(key,b64,base,ctl.signal);
+      if(!(res.status===404||(res.status===400&&/think/i.test(t))))break;
     }
     if(!res.ok){
       let m="";try{m=(await res.json()).error.message}catch(_){}
@@ -156,9 +163,10 @@ async function askClaude(key,blob){
     const txt=((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
     const j=txt.match(/\{[\s\S]*\}/);
     if(!j)throw new Error("결과를 읽지 못했어요");
+    say("분석 완료 ("+((Date.now()-t0)/1000).toFixed(1)+"초). 숫자가 틀렸다면 아래에서 고칠 수 있어요.");
     return JSON.parse(j[0]);
   }catch(e){
-    if(e.name==="AbortError")throw new Error("75초가 지나 중단했어요. 다시 시도하거나 MODEL을 gemini-2.5-flash로 바꿔 보세요");
+    if(e.name==="AbortError")throw new Error("45초가 지나 중단했어요. 다시 시도해 주세요");
     throw e;
   }finally{clearTimeout(timer);clearInterval(tick)}
 }
@@ -173,7 +181,7 @@ $("go").addEventListener("click",async()=>{
       .filter(x=>!/라스트|ラスト|last|^LO$/i.test(x.id));
     
 if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
-    S.tiers=t;S.cut=-1;say("분석 완료. 숫자가 틀렸다면 아래에서 고칠 수 있어요.");render();
+    S.tiers=t;S.cut=-1;render();
   }catch(e){say("분석에 실패했어요: "+(e&&e.message||"다시 시도해 주세요"),true)}
   finally{$("go").disabled=false}
 });
