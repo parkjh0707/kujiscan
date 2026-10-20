@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.0</title>
+<title>쿠지스캔 v2.1</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -70,7 +70,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너 <small class="ver">v2.0</small></h1>
+<h1>쿠지 스캐너 <small class="ver">v2.1</small></h1>
 
 <details class="card" id="keybox">
   <summary>API 키 설정</summary>
@@ -105,7 +105,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 </main>
 
 <script>
-const S={tiers:[],cut:-1,blob:null};
+const S={tiers:[],cut:-1,imgs:[]};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const say=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")};
@@ -115,7 +115,7 @@ const LASTRE=/라스트|ラスト|last|^LO$/i;
 /* ---------- 화면 전환 ---------- */
 function show(v){$("home").hidden=v!=="home";$("ichiban").hidden=v!=="ichiban";window.scrollTo(0,0)}
 function reset(){
-  S.tiers=[];S.cut=-1;S.blob=null;$("out").innerHTML="";
+  S.tiers=[];S.cut=-1;S.imgs=[];$("out").innerHTML="";
   $("dropText").textContent="회수 부착표 사진 찍기 · 선택하기";
   $("go").disabled=true;say("");
 }
@@ -133,13 +133,16 @@ $("saveKey").addEventListener("click",()=>{
 $("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}$("keybox").open=true});
 
 /* ---------- 사진 ---------- */
-async function shrink(file){
+// 전체 사진(이미지 1) + 아래쪽 60% 확대(이미지 2): 작은 라벨을 더 또렷하게 보내기 위함
+async function prepare(file){
   const b=await createImageBitmap(file);
-  const k=Math.min(1,1568/Math.max(b.width,b.height));
-  const c=document.createElement("canvas");
-  c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);
-  c.getContext("2d").drawImage(b,0,0,c.width,c.height);
-  return new Promise(r=>c.toBlob(r,"image/jpeg",.8));
+  const toBlob=c=>new Promise(r=>c.toBlob(r,"image/jpeg",.8));
+  const cv=(sx,sy,sw,sh,k)=>{const c=document.createElement("canvas");c.width=Math.round(sw*k);c.height=Math.round(sh*k);
+    c.getContext("2d").drawImage(b,sx,sy,sw,sh,0,0,c.width,c.height);return c};
+  const k1=Math.min(1,1568/Math.max(b.width,b.height));
+  const sy=Math.round(b.height*0.4),sh=b.height-sy;
+  const k2=Math.min(2,1568/Math.max(b.width,sh));
+  return Promise.all([toBlob(cv(0,0,b.width,b.height,k1)),toBlob(cv(0,sy,b.width,sh,k2))]);
 }
 const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
 
@@ -147,40 +150,44 @@ $("file").addEventListener("change",async e=>{
   const f=e.target.files[0];e.target.value="";if(!f)return;
   S.tiers=[];S.cut=-1;$("out").innerHTML="";say("");
   try{
-    S.blob=await shrink(f);
-    $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.blob)+'">';
+    S.imgs=await prepare(f);
+    $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.imgs[0])+'">';
     $("go").disabled=false;$("go").click();
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
 /* ---------- 제일복권 인식 ---------- */
-const PROMPT_ICHIBAN=`이 사진은 일번쿠지(一番くじ, 제일복권)의 회수 부착표입니다. 이 판의 규칙:
+const PROMPT_ICHIBAN=`이 사진은 일번쿠지(一番くじ, 제일복권)의 회수 부착표입니다. 이미지가 두 장 주어집니다. 이미지 1은 사진 전체, 이미지 2는 같은 사진의 아래쪽 60%를 확대한 것입니다. 작은 "あと N枚" 라벨은 이미지 2에서 확인하세요.
+이 판의 규칙:
 - 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 칸마다 "あと N枚"(N장 남음) 라벨이 인쇄되어 있습니다.
 - 티켓이 팔리면 그 등수의 알파벳(A, B, E 등)이 큼직하게 찍힌 검은 스텁이 칸 위에 붙어 라벨을 가립니다. 스텁에는 반드시 그 등수의 알파벳이 있으니, 스텁의 글자로 등수를 구분하세요.
 - 스텁이 가리지 않은 칸이 아직 안 팔린 티켓입니다.
 - 한 등수가 모두 팔리면 사장님이 빨간(또는 주황) "終了" 스티커를 그 등수 쪽에 붙이기도 합니다.
-먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
+- 아래쪽의 E, F, G, H… 같은 등수는 보통 세로 열 하나가 한 등수입니다. 열 왼쪽·위에 스텁이 쌓여 있고, 그 오른쪽과 아래에 라벨 칸이 이어집니다. 한 등수의 라벨이 스텁 줄 아래쪽에 따로 이어지는 경우가 많으니 열을 끝까지 내려가며 확인하고, 옆 열의 라벨과 섞지 마세요.
+먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래, 왼쪽에서 오른쪽 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
 각 등수 항목:
 - stubs: 그 등수 알파벳이 찍혀 붙어 있는 스텁 개수. 겹쳐 있어도 글자를 하나씩 세세요. 없으면 0
-- max_label: 스텁에 가려지지 않고 보이는 "あと N枚" 라벨 중 가장 큰 N. 보이는 라벨이 하나도 없으면 null
+- blocks: 스텁에 가려지지 않고 보이는 "あと N枚" 라벨을, 숫자가 연달아 이어지는 덩어리마다 {hi, lo}(가장 큰 N, 가장 작은 N)로 적으세요. 한 등수의 라벨이 여러 덩어리로 나뉘어 있을 수 있으니 모두 적으세요. 보이는 라벨이 없으면 빈 배열
 - open_slots: 스텁에 덮이지 않은 칸이 하나라도 보이면 true
 - ended: 그 등수에 빨간 終了 스티커가 붙어 있으면 true
 규칙:
-- 한 등수의 라벨이 여러 블록으로 나뉘어 있을 수 있습니다. 예: E는 한 블록에 あと6枚~1枚, 그 아래 다른 블록에 あと10枚~7枚가 이어지면 max_label은 10입니다. 등수의 스텁 줄 위아래와 좌우를 모두 훑으세요.
-- 보이는 라벨 숫자는 1부터 N까지 이어지는 것이 정상입니다.
-- A, B, D처럼 큰 글자 옆에 "あと2枚", "あと1枚"가 따로 적힌 등수도 같은 규칙입니다. 예: あと2枚와 あと1枚가 모두 보이면 max_label 2, 스텁이 위 칸을 덮고 あと1枚만 보이면 max_label 1.
-- 스텁이 모든 칸을 덮어 라벨이 전혀 안 보이면 max_label은 null, open_slots는 false입니다(전부 팔림). 그 등수도 목록에 포함하세요.
-- 라벨이 작아 숫자를 못 읽어도 덮이지 않은 칸이 보이면 open_slots를 true로 하고 max_label은 null로 두세요.
+- 예: E에 あと6枚~1枚 덩어리와, 그 아래 다른 곳에 あと10枚~7枚 덩어리가 보이면 blocks는 [{"hi":6,"lo":1},{"hi":10,"lo":7}]입니다. 남은 수량은 가장 큰 N(여기서는 10)이 됩니다.
+- 보이는 라벨 숫자는 1부터 N까지 빠짐없이 이어지는 것이 정상입니다. 빠진 구간이 있으면 그 번호의 덩어리를 다시 찾아보세요.
+- A, B, D처럼 큰 글자 옆에 "あと2枚", "あと1枚"가 따로 적힌 등수도 같은 규칙입니다. あと2枚와 あと1枚가 모두 보이면 [{"hi":2,"lo":1}], 스텁이 위 칸을 덮고 あと1枚만 보이면 [{"hi":1,"lo":1}].
+- 스텁이 모든 칸을 덮어 라벨이 전혀 안 보이면 blocks는 빈 배열, open_slots는 false입니다(전부 팔림). 그 등수도 목록에 포함하세요.
+- 라벨이 작아 숫자를 못 읽어도 덮이지 않은 칸이 보이면 open_slots를 true로 하고 blocks는 빈 배열로 두세요.
 - 펜으로 손으로 쓴 글씨(번호 범위, 가격, 메모)와 옆 포스터(다른 쿠지)는 무시하세요. 표 바깥 안내 문구 옆의 큰 빨간 終了는 세지 마세요.
 결과는 report 도구로 제출하세요.`;
 
 const TOOL_ICHIBAN={name:"report",description:"등수별 남은 칸 정보를 제출한다",input_schema:{type:"object",
   properties:{all_tiers:{type:"array",items:{type:"string"}},
-  tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},stubs:{type:"integer"},max_label:{type:["integer","null"]},open_slots:{type:"boolean"},ended:{type:"boolean"}},required:["id","stubs","max_label","open_slots","ended"]}}},
+  tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},stubs:{type:"integer"},
+    blocks:{type:"array",items:{type:"object",properties:{hi:{type:"integer"},lo:{type:"integer"}},required:["hi","lo"]}},
+    open_slots:{type:"boolean"},ended:{type:"boolean"}},required:["id","stubs","blocks","open_slots","ended"]}}},
   required:["all_tiers","tiers"]}};
 
-async function askClaude(key,blob,prompt,tool){
-  const b64=await toB64(blob);
+async function askClaude(key,imgs,prompt,tool){
+  const b64s=await Promise.all(imgs.map(toB64));
   const model=$("acc").checked?MODEL_ACC:MODEL_FAST;
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),40000);
   const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),500);
@@ -189,7 +196,7 @@ async function askClaude(key,blob,prompt,tool){
       method:"POST",signal:ctl.signal,
       headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
       body:JSON.stringify({model,max_tokens:1500,tools:[tool],tool_choice:{type:"tool",name:tool.name},
-        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:prompt}]}]})
+        messages:[{role:"user",content:[...b64s.map(data=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data}})),{type:"text",text:prompt}]}]})
     });
     if(!res.ok){
       let m="";try{m=(await res.json()).error.message}catch(_){}
@@ -214,9 +221,15 @@ async function askClaude(key,blob,prompt,tool){
 
 function parseIchiban(r){
   const t=(r.tiers||[]).map(x=>{
-    const ml=Number(x.max_label),rem=ml>0?ml:(x.open_slots?1:0);
-    let warn="";
-    if(x.ended&&rem>0)warn="終了 스티커가 있는데 빈 칸이 보여요 (종류별 종료일 수 있어요)";
+    const bl=(x.blocks||[]).map(b=>({hi:Number(b.hi),lo:Number(b.lo)})).filter(b=>b.hi>0&&b.lo>0&&b.hi>=b.lo);
+    let rem=0,warn="";
+    if(bl.length){
+      rem=Math.max(...bl.map(b=>b.hi));
+      const cov=new Set();bl.forEach(b=>{for(let n=b.lo;n<=b.hi;n++)cov.add(n)});
+      const gap=[];for(let n=1;n<=rem;n++)if(!cov.has(n))gap.push(n);
+      if(gap.length)warn="번호가 이어지지 않아요 (빠진 칸: "+gap.slice(0,6).join(", ")+(gap.length>6?"…":"")+")";
+    }else rem=x.open_slots?1:0;
+    if(x.ended&&rem>0)warn=(warn?warn+" · ":"")+"終了 스티커가 있는데 빈 칸이 보여요 (종류별 종료일 수 있어요)";
     return{id:String(x.id),remaining:rem,stubs:Number.isFinite(+x.stubs)?+x.stubs:null,warn};
   }).filter(x=>!LASTRE.test(x.id));
   const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
@@ -231,7 +244,7 @@ $("go").addEventListener("click",async()=>{
   try{
     const key=getKey();
     if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
-    const r=await askClaude(key,S.blob,PROMPT_ICHIBAN,TOOL_ICHIBAN);
+    const r=await askClaude(key,S.imgs,PROMPT_ICHIBAN,TOOL_ICHIBAN);
     const t=parseIchiban(r);
     if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
     S.tiers=t;S.cut=-1;render();
