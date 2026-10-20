@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v1.2</title>
+<title>쿠지스캔 v2.0</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -14,30 +14,42 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 :root[data-theme="dark"]{--bg:#1a1530;--card:#251e42;--ink:#f3eefc;--mute:#a79cc4;--line:#3a3160;--top:#ff7a6b;--low:#7db4ff;--on:#1a1530}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Noto Sans KR","Apple SD Gothic Neo",sans-serif}
 main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
 h1{font:400 30px/1.1 "Do Hyeon","Noto Sans KR",sans-serif;margin:8px 0 4px}
+.ver{font:700 13px "Noto Sans KR",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
 .sub{color:var(--mute);margin:0 0 20px;font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:28px 12px;text-align:center;color:var(--mute);cursor:pointer}
-.drop img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:0 auto}
-.drop input{display:none}
+h2{font:400 20px "Do Hyeon","Noto Sans KR",sans-serif;margin:0 0 4px}
+.hint{font-size:13px;color:var(--mute);margin:0 0 10px}
 button{font:700 15px "Noto Sans KR",sans-serif;border:0;border-radius:10px;padding:12px 16px;background:var(--ink);color:var(--bg);cursor:pointer}
 button:disabled{opacity:.4;cursor:default}
 button:focus-visible,.chip:focus-visible,.drop:focus-within{outline:3px solid var(--low);outline-offset:2px}
+/* 홈 */
+.kind{display:block;width:100%;text-align:left;padding:18px 16px;margin-bottom:12px;border-radius:14px;background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.kind b{display:block;font:400 24px "Do Hyeon",sans-serif}
+.kind span{font:400 13px "Noto Sans KR",sans-serif;color:var(--mute)}
+.kind:not(:disabled):hover{border-color:var(--top)}
+.back{background:transparent;color:var(--mute);padding:6px 0;margin-bottom:6px}
+/* 분석 */
+.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:28px 12px;text-align:center;color:var(--mute);cursor:pointer}
+.drop img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:0 auto}
+.drop input{display:none}
 .go{width:100%;margin-top:12px}
+.acc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--mute)}
 .msg{min-height:22px;margin:8px 0 0;font-size:14px;color:var(--mute)}
 .msg.err{color:var(--top)}
-h2{font:400 20px "Do Hyeon","Noto Sans KR",sans-serif;margin:0 0 4px}
-.hint{font-size:13px;color:var(--mute);margin:0 0 10px}
+details.card summary{font-weight:700;cursor:pointer}
+input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
+.keybtns{display:flex;gap:8px}.keybtns button{flex:1}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-width:44px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:400 20px "Do Hyeon",sans-serif}
 .chip.on{background:var(--top);border-color:var(--top);color:var(--on)}
 .big{text-align:center;padding:8px 0 4px}
 .big b{display:block;font:400 76px/1 "Do Hyeon",sans-serif;color:var(--top)}
 .big span{color:var(--mute);font-size:14px}
-.delta{text-align:center;font-size:14px;margin:6px 0 14px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-top:12px}
 .stats div{border:1px solid var(--line);border-radius:10px;padding:10px 4px}
 .stats b{display:block;font:400 26px/1.1 "Do Hyeon",sans-serif}
 .stats span{font-size:12px;color:var(--mute)}
@@ -49,22 +61,16 @@ h2{font:400 20px "Do Hyeon","Noto Sans KR",sans-serif;margin:0 0 4px}
 .bar i{display:block;height:100%;transition:width .25s}
 .top .bar i{background:var(--top)}.low .bar i{background:var(--low)}
 .meta{font-size:12px;color:var(--mute)}
+.warn{color:var(--top);font-weight:700}
 .step{display:flex;align-items:center;gap:6px}
 .step button{width:36px;height:36px;padding:0;font-size:18px;background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .step output{min-width:22px;text-align:center;font-weight:700}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
-details.card summary{font-weight:700;cursor:pointer}
-input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
-.keybtns{display:flex;gap:8px}.keybtns button{flex:1}
-.acc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--mute)}
-.ver{font:700 13px "Noto Sans KR",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
-.warn{color:var(--top);font-weight:700}
 </style>
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너 <small class="ver">v1.2</small></h1>
-<p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
+<h1>쿠지 스캐너 <small class="ver">v2.0</small></h1>
 
 <details class="card" id="keybox">
   <summary>API 키 설정</summary>
@@ -73,17 +79,29 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
   <div class="keybtns"><button id="saveKey">저장</button><button id="delKey">삭제</button></div>
 </details>
 
-<section class="card">
-  <label class="drop" id="drop">
-    <input type="file" id="file" accept="image/*" capture="environment">
-    <span id="dropText">회수 부착표 사진 찍기 · 선택하기</span>
-  </label>
-  <button class="go" id="go" disabled>사진 분석하기</button>
-  <label class="acc"><input type="checkbox" id="acc"> 정밀 모드 (Sonnet · 느리지만 더 정확)</label>
-  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+<!-- 홈 -->
+<section id="home">
+  <p class="sub">어떤 쿠지를 분석할까요?</p>
+  <button class="kind" data-go="ichiban"><b>제일복권</b><span>일번쿠지 · 등수 알파벳이 찍힌 스텁을 붙이는 판</span></button>
+  <button class="kind" disabled><b>자체쿠지</b><span>준비 중이에요</span></button>
 </section>
 
-<section id="out"></section>
+<!-- 제일복권 -->
+<section id="ichiban" hidden>
+  <button class="back" id="back">← 처음으로</button>
+  <h2>제일복권 분석</h2>
+  <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
+  <div class="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*" capture="environment">
+      <span id="dropText">회수 부착표 사진 찍기 · 선택하기</span>
+    </label>
+    <button class="go" id="go" disabled>사진 분석하기</button>
+    <label class="acc"><input type="checkbox" id="acc"> 정밀 모드 (Sonnet · 느리지만 더 정확)</label>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  </div>
+  <div id="out"></div>
+</section>
 </main>
 
 <script>
@@ -91,7 +109,30 @@ const S={tiers:[],cut:-1,blob:null};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const say=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")};
+const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
+const LASTRE=/라스트|ラスト|last|^LO$/i;
 
+/* ---------- 화면 전환 ---------- */
+function show(v){$("home").hidden=v!=="home";$("ichiban").hidden=v!=="ichiban";window.scrollTo(0,0)}
+function reset(){
+  S.tiers=[];S.cut=-1;S.blob=null;$("out").innerHTML="";
+  $("dropText").textContent="회수 부착표 사진 찍기 · 선택하기";
+  $("go").disabled=true;say("");
+}
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{reset();show(b.dataset.go)}));
+$("back").addEventListener("click",()=>{reset();show("home")});
+
+/* ---------- API 키 ---------- */
+const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
+if(!getKey())$("keybox").open=true;
+$("saveKey").addEventListener("click",()=>{
+  const v=$("key").value.trim();if(!v)return;
+  try{localStorage.setItem("kuji_key",v);$("key").value="";$("keybox").open=false}
+  catch(_){say("이 브라우저에서는 키를 저장할 수 없어요.",true)}
+});
+$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}$("keybox").open=true});
+
+/* ---------- 사진 ---------- */
 async function shrink(file){
   const b=await createImageBitmap(file);
   const k=Math.min(1,1568/Math.max(b.width,b.height));
@@ -100,6 +141,7 @@ async function shrink(file){
   c.getContext("2d").drawImage(b,0,0,c.width,c.height);
   return new Promise(r=>c.toBlob(r,"image/jpeg",.8));
 }
+const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
 
 $("file").addEventListener("change",async e=>{
   const f=e.target.files[0];e.target.value="";if(!f)return;
@@ -107,38 +149,37 @@ $("file").addEventListener("change",async e=>{
   try{
     S.blob=await shrink(f);
     $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.blob)+'">';
-    $("go").disabled=false;say("");$("go").click();
+    $("go").disabled=false;$("go").click();
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
-const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 줄지어 놓인 칸(푸른 회색 또는 주황·노랑의 작은 셀, 칸 안에 작은 번호)이 있고, 한 칸이 티켓 한 장입니다. 티켓이 팔리면 사장님이 그 칸 위에 스티커를 얹습니다. 스티커는 두 종류입니다: ① 빨간(또는 주황) 직사각형에 "終了" 글자가 적힌 스티커(약간 기울어 붙어 있음), ② 등수 글자(A, E 등)가 찍힌 검은 반쪽 티켓(스텁). 스티커가 올라간 칸은 번호가 가려지며 "팔린 칸"입니다. 스티커가 없는 칸이 "빈 칸"(아직 안 팔린 티켓)입니다.
-먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요. 등수마다 그 줄을 따라가며 스티커를 하나씩 세는 것부터 시작하세요.
+/* ---------- 제일복권 인식 ---------- */
+const PROMPT_ICHIBAN=`이 사진은 일번쿠지(一番くじ, 제일복권)의 회수 부착표입니다. 이 판의 규칙:
+- 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 칸마다 "あと N枚"(N장 남음) 라벨이 인쇄되어 있습니다.
+- 티켓이 팔리면 그 등수의 알파벳(A, B, E 등)이 큼직하게 찍힌 검은 스텁이 칸 위에 붙어 라벨을 가립니다. 스텁에는 반드시 그 등수의 알파벳이 있으니, 스텁의 글자로 등수를 구분하세요.
+- 스텁이 가리지 않은 칸이 아직 안 팔린 티켓입니다.
+- 한 등수가 모두 팔리면 사장님이 빨간(또는 주황) "終了" 스티커를 그 등수 쪽에 붙이기도 합니다.
+먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
 각 등수 항목:
-- stickers: 그 등수의 칸 위에 얹힌 스티커(빨간 終了 또는 검은 스텁) 개수. 하나도 없으면 0
-- total_slots: 그 등수의 전체 칸 수. 마지막 번호가 눈에 보일 때만 적고, 번호가 가려져 알 수 없으면 null
-- min_open / max_open: 빈 칸 중 가장 작은/가장 큰 인쇄 번호. 빈 칸이 없으면 둘 다 null
-- open_slots: 빈 칸이 하나라도 보이면 true
+- stubs: 그 등수 알파벳이 찍혀 붙어 있는 스텁 개수. 겹쳐 있어도 글자를 하나씩 세세요. 없으면 0
+- max_label: 스텁에 가려지지 않고 보이는 "あと N枚" 라벨 중 가장 큰 N. 보이는 라벨이 하나도 없으면 null
+- open_slots: 스텁에 덮이지 않은 칸이 하나라도 보이면 true
+- ended: 그 등수에 빨간 終了 스티커가 붙어 있으면 true
 규칙:
-- 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있습니다. 스티커가 없는 칸의 번호만 보세요.
-- 칸이 여러 줄이나 여러 블록으로 이어지면 모두 훑으세요. 예: E의 윗줄 1~9와 아랫줄 10번에 스티커가 있고 아랫줄 11~18이 비어 있으면 stickers 10, total_slots 18, min_open 11, max_open 18. 칸 2개가 모두 스티커로 덮인 B는 stickers 2, total_slots 2, min_open null, max_open null, open_slots false.
-- "あと N枚"(N장 남음)로 인쇄된 판은 N이 번호입니다. 스텁이 높은 번호부터 가리므로 보통 total_slots는 null입니다. 예: あと2枚, あと1枚가 둘 다 비어 있으면 stickers 0, min_open 1, max_open 2. 한 블록에 あと6~1, 다른 블록에 あと10~7이 비어 있으면 min_open 1, max_open 10. 스텁 아래 작은 칸 하나만 남았으면 min_open 1, max_open 1.
-- 펜으로 손으로 쓴 글씨(예: "1~2", "8~25", "대리판매", 가격, 메모)는 사장님 메모이므로 완전히 무시하세요.
-- 표 바깥의 終了 표시(제목 영역, "POPに終了シールを…" 안내 옆의 큰 빨간 終了, 사진 가장자리에 걸친 옆 포스터)는 안내 문구이므로 세지 마세요.
-- 번호가 작아 못 읽어도 빈 칸이 보이면 open_slots를 true로 하고 min_open과 max_open은 null로 두세요.
+- 한 등수의 라벨이 여러 블록으로 나뉘어 있을 수 있습니다. 예: E는 한 블록에 あと6枚~1枚, 그 아래 다른 블록에 あと10枚~7枚가 이어지면 max_label은 10입니다. 등수의 스텁 줄 위아래와 좌우를 모두 훑으세요.
+- 보이는 라벨 숫자는 1부터 N까지 이어지는 것이 정상입니다.
+- A, B, D처럼 큰 글자 옆에 "あと2枚", "あと1枚"가 따로 적힌 등수도 같은 규칙입니다. 예: あと2枚와 あと1枚가 모두 보이면 max_label 2, 스텁이 위 칸을 덮고 あと1枚만 보이면 max_label 1.
+- 스텁이 모든 칸을 덮어 라벨이 전혀 안 보이면 max_label은 null, open_slots는 false입니다(전부 팔림). 그 등수도 목록에 포함하세요.
+- 라벨이 작아 숫자를 못 읽어도 덮이지 않은 칸이 보이면 open_slots를 true로 하고 max_label은 null로 두세요.
+- 펜으로 손으로 쓴 글씨(번호 범위, 가격, 메모)와 옆 포스터(다른 쿠지)는 무시하세요. 표 바깥 안내 문구 옆의 큰 빨간 終了는 세지 마세요.
 결과는 report 도구로 제출하세요.`;
 
-const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
-const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
-if(!getKey())$("keybox").open=true;
-$("saveKey").addEventListener("click",()=>{
-  const v=$("key").value.trim();if(!v)return;
-  try{localStorage.setItem("kuji_key",v);$("key").value="";$("keybox").open=false;say("키를 저장했어요.")}
-  catch(_){say("이 브라우저에서는 키를 저장할 수 없어요.",true)}
-});
-$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}say("키를 삭제했어요.")});
+const TOOL_ICHIBAN={name:"report",description:"등수별 남은 칸 정보를 제출한다",input_schema:{type:"object",
+  properties:{all_tiers:{type:"array",items:{type:"string"}},
+  tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},stubs:{type:"integer"},max_label:{type:["integer","null"]},open_slots:{type:"boolean"},ended:{type:"boolean"}},required:["id","stubs","max_label","open_slots","ended"]}}},
+  required:["all_tiers","tiers"]}};
 
-const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
-async function askClaude(key,blob){
+async function askClaude(key,blob,prompt,tool){
   const b64=await toB64(blob);
   const model=$("acc").checked?MODEL_ACC:MODEL_FAST;
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),40000);
@@ -147,15 +188,8 @@ async function askClaude(key,blob){
     const res=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",signal:ctl.signal,
       headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({
-        model,
-        max_tokens:1500,
-        tools:[{name:"report",description:"등수별 빈 칸 범위를 제출한다",input_schema:{type:"object",properties:{all_tiers:{type:"array",items:{type:"string"}},tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},stickers:{type:"integer"},total_slots:{type:["integer","null"]},min_open:{type:["integer","null"]},max_open:{type:["integer","null"]},open_slots:{type:"boolean"}},required:["id","stickers","total_slots","min_open","max_open","open_slots"]}}},required:["all_tiers","tiers"]}}],
-        tool_choice:{type:"tool",name:"report"},
-        messages:[{role:"user",content:[
-          {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
-          {type:"text",text:PROMPT}]}]
-      })
+      body:JSON.stringify({model,max_tokens:1500,tools:[tool],tool_choice:{type:"tool",name:tool.name},
+        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:prompt}]}]})
     });
     if(!res.ok){
       let m="";try{m=(await res.json()).error.message}catch(_){}
@@ -178,32 +212,34 @@ async function askClaude(key,blob){
   }finally{clearTimeout(timer);clearInterval(tick)}
 }
 
+function parseIchiban(r){
+  const t=(r.tiers||[]).map(x=>{
+    const ml=Number(x.max_label),rem=ml>0?ml:(x.open_slots?1:0);
+    let warn="";
+    if(x.ended&&rem>0)warn="終了 스티커가 있는데 빈 칸이 보여요 (종류별 종료일 수 있어요)";
+    return{id:String(x.id),remaining:rem,stubs:Number.isFinite(+x.stubs)?+x.stubs:null,warn};
+  }).filter(x=>!LASTRE.test(x.id));
+  const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
+  const miss=order.filter(id=>!t.some(x=>x.id===id));
+  miss.forEach(id=>t.push({id,remaining:0,stubs:null,warn:"읽지 못했어요. + − 로 직접 입력해 주세요"}));
+  if(order.length)t.sort((a,b)=>{const i=order.indexOf(a.id),j=order.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)});
+  return t;
+}
+
 $("go").addEventListener("click",async()=>{
   $("go").disabled=true;S.tiers=[];S.cut=-1;$("out").innerHTML="";say("분석하는 중이에요…");
   try{
     const key=getKey();
     if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
-    const r=await askClaude(key,S.blob);
-    const LASTRE=/라스트|ラスト|last|^LO$/i;
-    const t=(r.tiers||[]).map(x=>{
-      const st=Number(x.stickers),tot=Number(x.total_slots),lo=Number(x.min_open),hi=Number(x.max_open);
-      const byRange=(lo>0&&hi>=lo)?hi-lo+1:null;                       // 빈 칸 번호 범위 기준
-      const bySticker=(tot>0&&st>=0&&st<=tot)?tot-st:null;            // 전체 칸 − 스티커 기준
-      let rem=byRange!==null?byRange:(bySticker!==null?bySticker:(x.open_slots?1:0)),warn="";
-      if(byRange!==null&&bySticker!==null&&byRange!==bySticker)warn="확인 필요 (번호 기준 "+byRange+" / 스티커 기준 "+bySticker+")";
-      return{id:String(x.id),remaining:rem,warn};
-    }).filter(x=>!LASTRE.test(x.id));
-    const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
-    const miss=order.filter(id=>!t.some(x=>x.id===id));
-    miss.forEach(id=>t.push({id,remaining:0}));
-    if(order.length)t.sort((a,b)=>{const i=order.indexOf(a.id),j=order.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)});
+    const r=await askClaude(key,S.blob,PROMPT_ICHIBAN,TOOL_ICHIBAN);
+    const t=parseIchiban(r);
     if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
     S.tiers=t;S.cut=-1;render();
-    if(miss.length)say("읽지 못한 등수가 있어요: "+miss.join(", ")+". + − 로 직접 입력해 주세요.",true);
   }catch(e){say("분석에 실패했어요: "+(e&&e.message||"다시 시도해 주세요"),true)}
   finally{$("go").disabled=false}
 });
 
+/* ---------- 결과 화면 ---------- */
 function render(){
   const T=S.tiers,cut=S.cut,sum=a=>a.reduce((s,t)=>s+t.remaining,0),rem=sum(T);
   let h='<section class="card"><h2>상위상은 어디까지?</h2><p class="hint">고른 등수까지 상위상으로 계산해요.</p><div class="chips">'+
@@ -215,15 +251,13 @@ function render(){
   }
   h+='<section class="card"><h2>등수별 남은 수량</h2><p class="hint">읽은 값이 틀리면 + − 로 고치세요.</p>'+
     T.map((t,i)=>{
-      const pc=rem?t.remaining/rem*100:0;
-      const cls=cut>=0&&i>cut?"low":"top";
+      const pc=rem?t.remaining/rem*100:0,cls=cut>=0&&i>cut?"low":"top";
       return '<div class="row '+cls+'"><div class="lt">'+esc(t.id)+'</div><div><div class="bar"><i style="width:'+pc+'%"></i></div>'+
-        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%'+(t.warn?'<br><span class="warn">⚠ '+esc(t.warn)+'</span>':'')+'</div></div>'+
+        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%'+(t.stubs!==null?' · 스텁 '+t.stubs+'개 확인':'')+(t.warn?'<br><span class="warn">⚠ '+esc(t.warn)+'</span>':'')+'</div></div>'+
         '<div class="step"><button data-i="'+i+'" data-d="-1" aria-label="'+esc(t.id)+' 하나 줄이기">−</button><output>'+t.remaining+'</output><button data-i="'+i+'" data-d="1" aria-label="'+esc(t.id)+' 하나 늘리기">+</button></div></div>';
     }).join("")+'</section>';
   $("out").innerHTML=h;
 }
-
 $("out").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.cut!==undefined){S.cut=+b.dataset.cut}
