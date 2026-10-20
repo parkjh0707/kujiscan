@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.1</title>
+<title>쿠지스캔 v2.2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -31,7 +31,8 @@ button:focus-visible,.chip:focus-visible,.drop:focus-within{outline:3px solid va
 .kind b{display:block;font:400 24px "Do Hyeon",sans-serif}
 .kind span{font:400 13px "Noto Sans KR",sans-serif;color:var(--mute)}
 .kind:not(:disabled):hover{border-color:var(--top)}
-.back{background:transparent;color:var(--mute);padding:6px 0;margin-bottom:6px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.icon{width:44px;height:44px;padding:0;border-radius:12px;background:transparent;color:var(--ink);border:1.5px solid var(--line);display:grid;place-items:center;flex:none}
 /* 분석 */
 .drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:28px 12px;text-align:center;color:var(--mute);cursor:pointer}
 .drop img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:0 auto}
@@ -70,7 +71,12 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너 <small class="ver">v2.1</small></h1>
+<header class="top">
+  <h1>쿠지 스캐너 <small class="ver">v2.2</small></h1>
+  <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
+  </button>
+</header>
 
 <details class="card" id="keybox">
   <summary>API 키 설정</summary>
@@ -83,13 +89,12 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 <section id="home">
   <p class="sub">어떤 쿠지를 분석할까요?</p>
   <button class="kind" data-go="ichiban"><b>제일복권</b><span>일번쿠지 · 등수 알파벳이 찍힌 스텁을 붙이는 판</span></button>
-  <button class="kind" disabled><b>자체쿠지</b><span>준비 중이에요</span></button>
+  <button class="kind" data-go="jache"><b>자체쿠지</b><span>가게가 직접 만든 판 · 스티커, 번호 라벨, 알파벳 스텁</span></button>
 </section>
 
 <!-- 제일복권 -->
-<section id="ichiban" hidden>
-  <button class="back" id="back">← 처음으로</button>
-  <h2>제일복권 분석</h2>
+<section id="scan" hidden>
+  <h2 id="scanTitle"></h2>
   <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
   <div class="card">
     <label class="drop" id="drop">
@@ -113,14 +118,15 @@ const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명�
 const LASTRE=/라스트|ラスト|last|^LO$/i;
 
 /* ---------- 화면 전환 ---------- */
-function show(v){$("home").hidden=v!=="home";$("ichiban").hidden=v!=="ichiban";window.scrollTo(0,0)}
+let MODE="ichiban";
+function show(v){$("home").hidden=v!=="home";$("scan").hidden=v==="home";$("homeBtn").hidden=v==="home";window.scrollTo(0,0)}
 function reset(){
   S.tiers=[];S.cut=-1;S.imgs=[];$("out").innerHTML="";
   $("dropText").textContent="회수 부착표 사진 찍기 · 선택하기";
   $("go").disabled=true;say("");
 }
-document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{reset();show(b.dataset.go)}));
-$("back").addEventListener("click",()=>{reset();show("home")});
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{reset();MODE=b.dataset.go;$("scanTitle").textContent=CFG[MODE].title;show("scan")}));
+$("homeBtn").addEventListener("click",()=>{reset();show("home")});
 
 /* ---------- API 키 ---------- */
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
@@ -230,22 +236,86 @@ function parseIchiban(r){
       if(gap.length)warn="번호가 이어지지 않아요 (빠진 칸: "+gap.slice(0,6).join(", ")+(gap.length>6?"…":"")+")";
     }else rem=x.open_slots?1:0;
     if(x.ended&&rem>0)warn=(warn?warn+" · ":"")+"終了 스티커가 있는데 빈 칸이 보여요 (종류별 종료일 수 있어요)";
-    return{id:String(x.id),remaining:rem,stubs:Number.isFinite(+x.stubs)?+x.stubs:null,warn};
+    return{id:String(x.id),remaining:rem,info:Number.isFinite(+x.stubs)?"스텁 "+(+x.stubs)+"개 확인":"",warn};
   }).filter(x=>!LASTRE.test(x.id));
   const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
   const miss=order.filter(id=>!t.some(x=>x.id===id));
-  miss.forEach(id=>t.push({id,remaining:0,stubs:null,warn:"읽지 못했어요. + − 로 직접 입력해 주세요"}));
+  miss.forEach(id=>t.push({id,remaining:0,info:"",warn:"읽지 못했어요. + − 로 직접 입력해 주세요"}));
   if(order.length)t.sort((a,b)=>{const i=order.indexOf(a.id),j=order.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)});
   return t;
 }
+
+const PROMPT_JACHE=`이 사진은 쿠지 가게의 회수 부착표입니다(가게가 직접 운영하는 자체쿠지 판). 이미지가 두 장 주어집니다. 이미지 1은 사진 전체, 이미지 2는 같은 사진의 아래쪽 60%를 확대한 것입니다. 작은 번호와 스티커는 이미지 2에서 확인하세요.
+구조:
+- 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 칸에는 번호가 인쇄되어 있습니다("1", "2", "1枚目", "あと N枚" 등).
+- 티켓이 팔리면 사장님이 칸 위에 스티커를 붙여 칸을 가립니다. 스티커 종류는 판마다 다릅니다: 빨간 終了 스티커, 팔린 티켓 번호를 손으로 쓴 흰 라벨(예: 27, 44, 80), 등수 알파벳이 찍힌 검은 스텁. 어떤 종류든 "팔린 칸 1개"입니다. 스텁을 칸 위가 아니라 별도 줄에 쌓아 두는 판도 있는데, 그 경우 스텁 줄은 칸을 가리지 않으니 stickers에 세지 말고 인쇄된 번호 칸만 읽으세요.
+- 번호가 큰 칸부터 가리는 가게도 있고 작은 칸부터 가리는 가게도 있습니다. 그래서 가려진 칸이 아니라 "가려지지 않은 칸"과 "스티커 개수"를 읽어야 합니다.
+- 등수 글자 근처에 사장님이 펜으로 쓴 "티켓 번호 범위"(예: "10-33", "3", "8~25")가 있는 판이 많습니다. 이 범위의 양 끝이 그 등수 전체 티켓의 번호입니다.
+먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래, 왼쪽에서 오른쪽 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
+각 등수 항목:
+- written_lo, written_hi: 그 등수의 손글씨 티켓 번호 범위의 양 끝. 숫자 하나면 둘 다 같은 값. 범위가 없거나 읽을 수 없으면 둘 다 null
+- stickers: 그 등수의 칸 위에 붙은 스티커 개수(빨간 終了, 번호 라벨, 알파벳 스텁 모두 포함). 겹쳐 붙은 라벨도 하나씩 세세요. 없으면 0
+- open_lo, open_hi: 스티커로 가려지지 않고 보이는 칸의 "인쇄된 칸 번호" 중 가장 작은 번호와 가장 큰 번호(칸이 여러 줄이나 블록에 걸쳐 있으면 전체에서). 스티커에 손으로 쓴 번호와 손글씨 범위는 칸 번호가 아닙니다. 보이는 칸이 없으면 둘 다 null
+- open_slots: 가려지지 않은 칸이 하나라도 보이면 true
+예시:
+- F: 손글씨가 "10-33", 윗줄 칸 1~12 중 1~3번이 흰 라벨 3장으로 덮이고 4~12번과 아랫줄 13~24번이 보이면 written_lo 10, written_hi 33, stickers 3, open_lo 4, open_hi 24.
+- B: 손글씨가 "3"이고 칸 1개가 비어 있으면 written_lo 3, written_hi 3, stickers 0, open_lo 1, open_hi 1.
+- 칸이 모두 가려졌으면 open_lo와 open_hi는 null, open_slots는 false.
+- "あと N枚" 방식 판은 보이는 칸의 N 중 가장 작은 값과 가장 큰 값을 open_lo, open_hi로 쓰세요.
+- 한 줄에 칸이 이어지다 다른 줄로 넘어가는 경우(예: 윗줄 1~12, 아랫줄 13~24)에도 전체 범위로 적으세요.
+- 옆 포스터(다른 쿠지)는 무시하세요. 표 바깥 안내 문구 옆의 큰 빨간 終了는 세지 마세요.
+결과는 report 도구로 제출하세요.`;
+
+const TOOL_JACHE={name:"report",description:"등수별 티켓 범위, 스티커 개수, 빈 칸 범위를 제출한다",input_schema:{type:"object",
+  properties:{all_tiers:{type:"array",items:{type:"string"}},
+  tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},
+    written_lo:{type:["integer","null"]},written_hi:{type:["integer","null"]},
+    stickers:{type:"integer"},
+    open_lo:{type:["integer","null"]},open_hi:{type:["integer","null"]},
+    open_slots:{type:"boolean"}},required:["id","written_lo","written_hi","stickers","open_lo","open_hi","open_slots"]}}},
+  required:["all_tiers","tiers"]}};
+
+// 남은 수량 = (손글씨 범위의 전체 − 스티커 수) 와 (빈 칸 번호 범위) 두 가지로 계산해 서로 확인
+function parseJache(r){
+  const t=(r.tiers||[]).map(x=>{
+    const wl=Number(x.written_lo),wh=Number(x.written_hi),ol=Number(x.open_lo),oh=Number(x.open_hi);
+    const st=Number.isFinite(Number(x.stickers))?Number(x.stickers):null;
+    const total=(wl>0&&wh>=wl)?wh-wl+1:null;
+    const e1=(ol>0&&oh>=ol)?oh-ol+1:null;                          // 보이는 칸 번호 기준
+    const e2=(total!==null&&st!==null&&st<=total)?total-st:null;   // 전체 − 스티커 기준
+    let rem,warn="";
+    if(e1!==null&&e2!==null){
+      if(Math.abs(e1-e2)<=1)rem=e2;   // 1 차이는 판에 쓰이지 않는 칸이 남는 경우가 있어 손글씨 범위를 우선
+      else{rem=e1;warn="서로 달라요 (빈 칸 번호 기준 "+e1+" / 전체−스티커 기준 "+e2+")"}
+    }else if(e2!==null)rem=e2;
+    else if(e1!==null)rem=e1;
+    else rem=x.open_slots?1:0;
+    const parts=[];
+    if(total!==null)parts.push("전체 "+total);
+    if(st!==null)parts.push("스티커 "+st+"개");
+    if(e1!==null)parts.push("빈 칸 "+ol+"~"+oh);
+    return{id:String(x.id),remaining:rem,info:parts.join(" · "),warn};
+  }).filter(x=>!LASTRE.test(x.id));
+  const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
+  const miss=order.filter(id=>!t.some(x=>x.id===id));
+  miss.forEach(id=>t.push({id,remaining:0,info:"",warn:"읽지 못했어요. + − 로 직접 입력해 주세요"}));
+  if(order.length)t.sort((a,b)=>{const i=order.indexOf(a.id),j=order.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)});
+  return t;
+}
+
+const CFG={
+  ichiban:{title:"제일복권 분석",prompt:PROMPT_ICHIBAN,tool:TOOL_ICHIBAN,parse:parseIchiban},
+  jache:{title:"자체쿠지 분석",prompt:PROMPT_JACHE,tool:TOOL_JACHE,parse:parseJache}
+};
 
 $("go").addEventListener("click",async()=>{
   $("go").disabled=true;S.tiers=[];S.cut=-1;$("out").innerHTML="";say("분석하는 중이에요…");
   try{
     const key=getKey();
     if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
-    const r=await askClaude(key,S.imgs,PROMPT_ICHIBAN,TOOL_ICHIBAN);
-    const t=parseIchiban(r);
+    const cfg=CFG[MODE];
+    const r=await askClaude(key,S.imgs,cfg.prompt,cfg.tool);
+    const t=cfg.parse(r);
     if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
     S.tiers=t;S.cut=-1;render();
   }catch(e){say("분석에 실패했어요: "+(e&&e.message||"다시 시도해 주세요"),true)}
@@ -266,7 +336,7 @@ function render(){
     T.map((t,i)=>{
       const pc=rem?t.remaining/rem*100:0,cls=cut>=0&&i>cut?"low":"top";
       return '<div class="row '+cls+'"><div class="lt">'+esc(t.id)+'</div><div><div class="bar"><i style="width:'+pc+'%"></i></div>'+
-        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%'+(t.stubs!==null?' · 스텁 '+t.stubs+'개 확인':'')+(t.warn?'<br><span class="warn">⚠ '+esc(t.warn)+'</span>':'')+'</div></div>'+
+        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%'+(t.info?' · '+esc(t.info):'')+(t.warn?'<br><span class="warn">⚠ '+esc(t.warn)+'</span>':'')+'</div></div>'+
         '<div class="step"><button data-i="'+i+'" data-d="-1" aria-label="'+esc(t.id)+' 하나 줄이기">−</button><output>'+t.remaining+'</output><button data-i="'+i+'" data-d="1" aria-label="'+esc(t.id)+' 하나 늘리기">+</button></div></div>';
     }).join("")+'</section>';
   $("out").innerHTML=h;
