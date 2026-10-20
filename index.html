@@ -1,73 +1,196 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111827">
-  <title>쿠지스캔</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; padding: 24px;
-      background: #f5f6fa; color: #171923;
-      font-family: Arial, sans-serif;
-    }
-    h1 { margin-bottom: 8px; }
-    .card {
-      background: white; padding: 20px;
-      border-radius: 18px; margin-top: 20px;
-    }
-    label { display: block; margin-top: 16px; }
-    input, button {
-      width: 100%; padding: 13px;
-      margin-top: 8px; font-size: 16px;
-      border-radius: 10px;
-    }
-    input { border: 1px solid #ddd; }
-    button {
-      border: 0; background: #2563eb;
-      color: white; font-weight: bold;
-    }
-    #result { font-size: 24px; font-weight: bold; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1530">
+<title>쿠지스캔</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+:root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1530;--card:#251e42;--ink:#f3eefc;--mute:#a79cc4;--line:#3a3160;--top:#ff7a6b;--low:#7db4ff;--on:#1a1530}}
+:root[data-theme="dark"]{--bg:#1a1530;--card:#251e42;--ink:#f3eefc;--mute:#a79cc4;--line:#3a3160;--top:#ff7a6b;--low:#7db4ff;--on:#1a1530}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Noto Sans KR","Apple SD Gothic Neo",sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+h1{font:400 30px/1.1 "Do Hyeon","Noto Sans KR",sans-serif;margin:8px 0 4px}
+.sub{color:var(--mute);margin:0 0 20px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:28px 12px;text-align:center;color:var(--mute);cursor:pointer}
+.drop img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:0 auto}
+.drop input{display:none}
+button{font:700 15px "Noto Sans KR",sans-serif;border:0;border-radius:10px;padding:12px 16px;background:var(--ink);color:var(--bg);cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,.chip:focus-visible,.drop:focus-within{outline:3px solid var(--low);outline-offset:2px}
+.go{width:100%;margin-top:12px}
+.msg{min-height:22px;margin:8px 0 0;font-size:14px;color:var(--mute)}
+.msg.err{color:var(--top)}
+h2{font:400 20px "Do Hyeon","Noto Sans KR",sans-serif;margin:0 0 4px}
+.hint{font-size:13px;color:var(--mute);margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-width:44px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:400 20px "Do Hyeon",sans-serif}
+.chip.on{background:var(--top);border-color:var(--top);color:var(--on)}
+.big{text-align:center;padding:8px 0 4px}
+.big b{display:block;font:400 76px/1 "Do Hyeon",sans-serif;color:var(--top)}
+.big span{color:var(--mute);font-size:14px}
+.delta{text-align:center;font-size:14px;margin:6px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{border:1px solid var(--line);border-radius:10px;padding:10px 4px}
+.stats b{display:block;font:400 26px/1.1 "Do Hyeon",sans-serif}
+.stats span{font-size:12px;color:var(--mute)}
+.row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.lt{font:400 24px "Do Hyeon",sans-serif}
+.top .lt{color:var(--top)}.low .lt{color:var(--low)}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:4px 0}
+.bar i{display:block;height:100%;transition:width .25s}
+.top .bar i{background:var(--top)}.low .bar i{background:var(--low)}
+.meta{font-size:12px;color:var(--mute)}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:36px;height:36px;padding:0;font-size:18px;background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.step output{min-width:22px;text-align:center;font-weight:700}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+details.card summary{font-weight:700;cursor:pointer}
+input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
+.keybtns{display:flex;gap:8px}.keybtns button{flex:1}
+</style>
 </head>
 <body>
-  <h1>KUJISCAN</h1>
-  <p>남은 쿠지의 당첨 확률을 확인해 보세요.</p>
+<main>
+<h1>쿠지 스캐너</h1>
+<p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
 
-  <div class="card">
-    <h2>쿠지판 정보 입력</h2>
+<details class="card" id="keybox">
+  <summary>API 키 설정</summary>
+  <p class="hint">키는 이 폰의 브라우저에만 저장돼요. 코드나 GitHub에는 절대 넣지 마세요.</p>
+  <input type="password" id="key" placeholder="AIza..." autocomplete="off" autocapitalize="off">
+  <div class="keybtns"><button id="saveKey">저장</button><button id="delKey">삭제</button></div>
+</details>
 
-    <label for="total">전체 남은 제비 수</label>
-    <input id="total" type="number" min="1" value="50">
+<section class="card">
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="image/*" capture="environment">
+    <span id="dropText">회수 부착표 사진 찍기 · 선택하기</span>
+  </label>
+  <button class="go" id="go" disabled>사진 분석하기</button>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+</section>
 
-    <label for="prizes">내가 원하는 상품의 남은 수</label>
-    <input id="prizes" type="number" min="0" value="1">
+<section id="out"></section>
+</main>
 
-    <button onclick="calculate()">당첨 확률 계산</button>
+<script>
+const S={tiers:[],cut:-1,blob:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const say=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")};
 
-    <p id="result">확률을 계산해 보세요.</p>
-  </div>
+async function shrink(file){
+  const b=await createImageBitmap(file);
+  const k=Math.min(1,2000/Math.max(b.width,b.height));
+  const c=document.createElement("canvas");
+  c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);
+  c.getContext("2d").drawImage(b,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+}
 
-  <script>
-    function calculate() {
-      const total = Number(document.getElementById("total").value);
-      const prizes = Number(document.getElementById("prizes").value);
-      const result = document.getElementById("result");
+$("file").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    S.blob=await shrink(f);
+    $("dropText").innerHTML='<img alt="촬영한 회수 부착표" src="'+URL.createObjectURL(S.blob)+'">';
+    $("go").disabled=false;say("");
+  }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
+});
 
-      if (
-        !Number.isInteger(total) || total < 1 ||
-        !Number.isInteger(prizes) ||
-        prizes < 0 || prizes > total
-      ) {
-        result.textContent = "올바른 수량을 입력해 주세요.";
-        return;
-      }
+const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)별로 아직 팔리지 않은 티켓 수를 알기 위해, 눈에 보이는 "あと N枚"(N장 남음) 라벨을 모두 찾아주세요.
+라스트원(ラストワン賞, Last One)은 뽑는 티켓이 아니므로 제외하세요. 사진 가장자리에 걸친 옆 포스터(다른 쿠지)는 무시하세요.
+규칙:
+- 각 등수 칸에는 "あと N枚" 라벨이 인쇄되어 있고, 팔린 티켓의 스텁(검은 반쪽 티켓)이 붙으면 그 라벨이 가려집니다. 따라서 보이는 라벨 중 가장 큰 N이 남은 수량입니다.
+- 한 등수의 라벨이 여러 블록으로 나뉘어 있을 수 있습니다. 예를 들어 E는 한 블록에 "あと6枚"부터 "あと1枚"가 있고, 그 아래 다른 블록에 "あと10枚, 9枚, 8枚, 7枚"가 이어집니다. 이럴 땐 모든 블록의 숫자를 적어야 합니다. 등수의 스텁 줄 위아래와 좌우를 모두 훑으세요.
+- 정상이라면 보이는 숫자는 1부터 N까지 빠짐없이 이어집니다. 빠진 숫자가 있으면 그 사이를 다시 찾아보세요.
+- A, B, D처럼 큰 글자 옆에 "あと2枚" "あと1枚"가 따로 적힌 등수도 같은 규칙입니다.
+- open_slots는 스텁에 덮이지 않고 보이는 칸(주황·노랑·흰색 탭)이 하나라도 있으면 true입니다. 글자가 작아 숫자를 못 읽어도 보이는 탭이 있으면 true로 하세요. 특히 큰 그림 옆의 C처럼 검은 스텁 아래에 작은 주황 탭 "あと1枚"가 남아 있는 경우를 놓치지 마세요. 스텁이 모든 칸을 덮어 탭이 전혀 안 보이면 전부 팔린 것이니 visible은 빈 배열, open_slots는 false로 두고 그 등수도 목록에 포함하세요.
+- 스텁 개수나 전체 수량은 세지 마세요. 보이는 라벨 숫자만 적으세요.
+예시: A에 "あと2枚"와 "あと1枚"가 보이면 {"id":"A","visible":[2,1],"open_slots":true}, 스텁 하나가 유일한 칸을 덮고 있는 C는 {"id":"C","visible":[],"open_slots":false}, 스텁 아래에 작은 주황 탭 "あと1枚"가 남은 C는 {"id":"C","visible":[1],"open_slots":true}.
+등수는 보드에 나온 순서대로 적으세요. JSON만 출력하세요: {"tiers":[{"id":"A","visible":[2,1],"open_slots":true}]}`;
 
-      const probability = prizes / total * 100;
-      result.textContent = `당첨 확률 ${probability.toFixed(2)}%`;
-    }
-  </script>
+const MODEL="gemini-flash-latest"; // 모델명이 바뀌면 여기만 수정 (AI Studio에서 확인)
+const getKey=()=>{try{return localStorage.getItem("kuji_gkey")||""}catch(_){return ""}};
+if(!getKey())$("keybox").open=true;
+$("saveKey").addEventListener("click",()=>{
+  const v=$("key").value.trim();if(!v)return;
+  try{localStorage.setItem("kuji_gkey",v);$("key").value="";$("keybox").open=false;say("키를 저장했어요.")}
+  catch(_){say("이 브라우저에서는 키를 저장할 수 없어요.",true)}
+});
+$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_gkey")}catch(_){}say("키를 삭제했어요.")});
+
+const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
+async function askClaude(key,blob){
+  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+MODEL+":generateContent",{
+    method:"POST",
+    headers:{"content-type":"application/json","x-goog-api-key":key},
+    body:JSON.stringify({
+      contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:await toB64(blob)}},{text:PROMPT}]}],
+      generationConfig:{temperature:0,responseMimeType:"application/json"}
+    })
+  });
+  if(!res.ok){
+    let m="";try{m=(await res.json()).error.message}catch(_){}
+    if(res.status===429)throw new Error("무료 사용 한도에 걸렸어요. 잠시 후 다시 시도해 주세요");
+    if(res.status===400&&/API key/i.test(m)||res.status===403)throw new Error("API 키가 올바르지 않거나 권한이 없어요");
+    throw new Error(m||("오류 "+res.status));
+  }
+  const d=await res.json();
+  const txt=((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+  const j=txt.match(/\{[\s\S]*\}/);
+  if(!j)throw new Error("결과를 읽지 못했어요");
+  return JSON.parse(j[0]);
+}
+
+$("go").addEventListener("click",async()=>{
+  $("go").disabled=true;say("분석하는 중이에요…");
+  try{
+    const key=getKey();
+    if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
+    const r=await askClaude(key,S.blob);
+    const t=(r&&r.tiers||[]).map(x=>({id:String(x.id),remaining:(v=>v.length?Math.max(...v):(x.open_slots?1:0))((x.visible||[]).map(Number).filter(n=>n>0))}))
+      .filter(x=>!/라스트|ラスト|last|^LO$/i.test(x.id));
+    
+if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
+    S.tiers=t;S.cut=-1;say("분석 완료. 숫자가 틀렸다면 아래에서 고칠 수 있어요.");render();
+  }catch(e){say("분석에 실패했어요: "+(e&&e.message||"다시 시도해 주세요"),true)}
+  finally{$("go").disabled=false}
+});
+
+function render(){
+  const T=S.tiers,cut=S.cut,sum=a=>a.reduce((s,t)=>s+t.remaining,0),rem=sum(T);
+  let h='<section class="card"><h2>상위상은 어디까지?</h2><p class="hint">고른 등수까지 상위상으로 계산해요.</p><div class="chips">'+
+    T.map((t,i)=>'<button class="chip'+(i===cut?" on":"")+'" data-cut="'+i+'">'+esc(t.id)+'</button>').join("")+'</div></section>';
+  if(cut>=0){
+    const rt=sum(T.slice(0,cut+1)),rl=rem-rt,p=rem?rt/rem*100:0;
+    h+='<section class="card"><div class="big"><b>'+p.toFixed(1)+'%</b><span>다음 한 장에서 상위상('+esc(T[0].id)+'~'+esc(T[cut].id)+')이 나올 확률</span></div>'+
+      '<div class="stats"><div><b>'+rem+'</b><span>남은 수량</span></div><div><b style="color:var(--top)">'+rt+'</b><span>상위상 남음</span></div><div><b style="color:var(--low)">'+rl+'</b><span>하위상 남음</span></div></div></section>';
+  }
+  h+='<section class="card"><h2>등수별 남은 수량</h2><p class="hint">읽은 값이 틀리면 + − 로 고치세요.</p>'+
+    T.map((t,i)=>{
+      const pc=rem?t.remaining/rem*100:0;
+      const cls=cut>=0&&i>cut?"low":"top";
+      return '<div class="row '+cls+'"><div class="lt">'+esc(t.id)+'</div><div><div class="bar"><i style="width:'+pc+'%"></i></div>'+
+        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%</div></div>'+
+        '<div class="step"><button data-i="'+i+'" data-d="-1" aria-label="'+esc(t.id)+' 하나 줄이기">−</button><output>'+t.remaining+'</output><button data-i="'+i+'" data-d="1" aria-label="'+esc(t.id)+' 하나 늘리기">+</button></div></div>';
+    }).join("")+'</section>';
+  $("out").innerHTML=h;
+}
+
+$("out").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.cut!==undefined){S.cut=+b.dataset.cut}
+  else if(b.dataset.i!==undefined){const t=S.tiers[+b.dataset.i];t.remaining=Math.max(0,t.remaining+ +b.dataset.d)}
+  render();
+});
+</script>
 </body>
 </html>
