@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v1.1</title>
+<title>쿠지스캔 v1.2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -58,11 +58,12 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 .keybtns{display:flex;gap:8px}.keybtns button{flex:1}
 .acc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--mute)}
 .ver{font:700 13px "Noto Sans KR",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
+.warn{color:var(--top);font-weight:700}
 </style>
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너 <small class="ver">v1.1</small></h1>
+<h1>쿠지 스캐너 <small class="ver">v1.2</small></h1>
 <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
 
 <details class="card" id="keybox">
@@ -110,20 +111,20 @@ $("file").addEventListener("change",async e=>{
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
-const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 팔린 티켓은 스텁(검은 반쪽 티켓) 또는 빨간 終了 스티커가 그 칸 위에 붙어 칸을 가립니다. 스티커가 안 붙은 "빈 칸"이 아직 안 팔린 티켓입니다.
-먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
+const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 줄지어 놓인 칸(푸른 회색 또는 주황·노랑의 작은 셀, 칸 안에 작은 번호)이 있고, 한 칸이 티켓 한 장입니다. 티켓이 팔리면 사장님이 그 칸 위에 스티커를 얹습니다. 스티커는 두 종류입니다: ① 빨간(또는 주황) 직사각형에 "終了" 글자가 적힌 스티커(약간 기울어 붙어 있음), ② 등수 글자(A, E 등)가 찍힌 검은 반쪽 티켓(스텁). 스티커가 올라간 칸은 번호가 가려지며 "팔린 칸"입니다. 스티커가 없는 칸이 "빈 칸"(아직 안 팔린 티켓)입니다.
+먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요. 등수마다 그 줄을 따라가며 스티커를 하나씩 세는 것부터 시작하세요.
 각 등수 항목:
-- min_open: 빈 칸 중 가장 작은 인쇄 번호
-- max_open: 빈 칸 중 가장 큰 인쇄 번호
-- 빈 칸이 하나도 없으면(모두 스티커로 덮임) 둘 다 null
-- open_slots: 빈 칸이 하나라도 보이면 true, 없으면 false
+- stickers: 그 등수의 칸 위에 얹힌 스티커(빨간 終了 또는 검은 스텁) 개수. 하나도 없으면 0
+- total_slots: 그 등수의 전체 칸 수. 마지막 번호가 눈에 보일 때만 적고, 번호가 가려져 알 수 없으면 null
+- min_open / max_open: 빈 칸 중 가장 작은/가장 큰 인쇄 번호. 빈 칸이 없으면 둘 다 null
+- open_slots: 빈 칸이 하나라도 보이면 true
 규칙:
-- 빈 칸의 번호는 보통 끊기지 않고 이어집니다. 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있으니, 스티커가 붙은 칸은 보지 말고 스티커가 없는 칸의 번호만 보세요.
-- 칸이 여러 줄이나 여러 블록으로 이어지면 모두 훑으세요. 예: E의 윗줄 1~9와 아랫줄 10번이 스티커로 덮이고 아랫줄 11~18이 비어 있으면 min_open 11, max_open 18.
-- "あと N枚"(N장 남음)로 인쇄된 판은 N이 번호입니다. 빈 칸의 N 중 가장 작은 값과 가장 큰 값을 쓰세요. 예: あと2枚, あと1枚가 둘 다 비어 있으면 min_open 1, max_open 2. 한 블록에 あと6~1, 다른 블록에 あと10~7이 비어 있으면 min_open 1, max_open 10. 스티커 아래에 작은 칸 하나만 남은 C는 min_open 1, max_open 1.
-- 펜으로 손으로 쓴 글씨(예: "1~2", "8~25", "대리판매", 가격, 메모)는 사장님 메모이므로 완전히 무시하세요. 칸 안에 인쇄된 번호만 쓰세요.
-- 글자가 작아 번호를 못 읽어도 빈 칸이 보이면 open_slots를 true로 하고 min_open과 max_open은 null로 두세요.
-- 옆 포스터(다른 쿠지)는 무시하세요.
+- 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있습니다. 스티커가 없는 칸의 번호만 보세요.
+- 칸이 여러 줄이나 여러 블록으로 이어지면 모두 훑으세요. 예: E의 윗줄 1~9와 아랫줄 10번에 스티커가 있고 아랫줄 11~18이 비어 있으면 stickers 10, total_slots 18, min_open 11, max_open 18. 칸 2개가 모두 스티커로 덮인 B는 stickers 2, total_slots 2, min_open null, max_open null, open_slots false.
+- "あと N枚"(N장 남음)로 인쇄된 판은 N이 번호입니다. 스텁이 높은 번호부터 가리므로 보통 total_slots는 null입니다. 예: あと2枚, あと1枚가 둘 다 비어 있으면 stickers 0, min_open 1, max_open 2. 한 블록에 あと6~1, 다른 블록에 あと10~7이 비어 있으면 min_open 1, max_open 10. 스텁 아래 작은 칸 하나만 남았으면 min_open 1, max_open 1.
+- 펜으로 손으로 쓴 글씨(예: "1~2", "8~25", "대리판매", 가격, 메모)는 사장님 메모이므로 완전히 무시하세요.
+- 표 바깥의 終了 표시(제목 영역, "POPに終了シールを…" 안내 옆의 큰 빨간 終了, 사진 가장자리에 걸친 옆 포스터)는 안내 문구이므로 세지 마세요.
+- 번호가 작아 못 읽어도 빈 칸이 보이면 open_slots를 true로 하고 min_open과 max_open은 null로 두세요.
 결과는 report 도구로 제출하세요.`;
 
 const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
@@ -149,7 +150,7 @@ async function askClaude(key,blob){
       body:JSON.stringify({
         model,
         max_tokens:1500,
-        tools:[{name:"report",description:"등수별 빈 칸 범위를 제출한다",input_schema:{type:"object",properties:{all_tiers:{type:"array",items:{type:"string"}},tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},min_open:{type:["integer","null"]},max_open:{type:["integer","null"]},open_slots:{type:"boolean"}},required:["id","min_open","max_open","open_slots"]}}},required:["all_tiers","tiers"]}}],
+        tools:[{name:"report",description:"등수별 빈 칸 범위를 제출한다",input_schema:{type:"object",properties:{all_tiers:{type:"array",items:{type:"string"}},tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},stickers:{type:"integer"},total_slots:{type:["integer","null"]},min_open:{type:["integer","null"]},max_open:{type:["integer","null"]},open_slots:{type:"boolean"}},required:["id","stickers","total_slots","min_open","max_open","open_slots"]}}},required:["all_tiers","tiers"]}}],
         tool_choice:{type:"tool",name:"report"},
         messages:[{role:"user",content:[
           {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
@@ -185,8 +186,12 @@ $("go").addEventListener("click",async()=>{
     const r=await askClaude(key,S.blob);
     const LASTRE=/라스트|ラスト|last|^LO$/i;
     const t=(r.tiers||[]).map(x=>{
-      const lo=Number(x.min_open),hi=Number(x.max_open);
-      return{id:String(x.id),remaining:(lo>0&&hi>=lo)?hi-lo+1:(x.open_slots?1:0)};
+      const st=Number(x.stickers),tot=Number(x.total_slots),lo=Number(x.min_open),hi=Number(x.max_open);
+      const byRange=(lo>0&&hi>=lo)?hi-lo+1:null;                       // 빈 칸 번호 범위 기준
+      const bySticker=(tot>0&&st>=0&&st<=tot)?tot-st:null;            // 전체 칸 − 스티커 기준
+      let rem=byRange!==null?byRange:(bySticker!==null?bySticker:(x.open_slots?1:0)),warn="";
+      if(byRange!==null&&bySticker!==null&&byRange!==bySticker)warn="확인 필요 (번호 기준 "+byRange+" / 스티커 기준 "+bySticker+")";
+      return{id:String(x.id),remaining:rem,warn};
     }).filter(x=>!LASTRE.test(x.id));
     const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
     const miss=order.filter(id=>!t.some(x=>x.id===id));
@@ -213,7 +218,7 @@ function render(){
       const pc=rem?t.remaining/rem*100:0;
       const cls=cut>=0&&i>cut?"low":"top";
       return '<div class="row '+cls+'"><div class="lt">'+esc(t.id)+'</div><div><div class="bar"><i style="width:'+pc+'%"></i></div>'+
-        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%</div></div>'+
+        '<div class="meta">남은 '+t.remaining+'장 · 한 장 뽑을 때 '+pc.toFixed(1)+'%'+(t.warn?'<br><span class="warn">⚠ '+esc(t.warn)+'</span>':'')+'</div></div>'+
         '<div class="step"><button data-i="'+i+'" data-d="-1" aria-label="'+esc(t.id)+' 하나 줄이기">−</button><output>'+t.remaining+'</output><button data-i="'+i+'" data-d="1" aria-label="'+esc(t.id)+' 하나 늘리기">+</button></div></div>';
     }).join("")+'</section>';
   $("out").innerHTML=h;
