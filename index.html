@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.3</title>
+<title>쿠지스캔 v2.4</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -76,13 +76,81 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 .ver{color:#e8e2f7;border-color:rgba(255,255,255,.45)}
 .icon{background:rgba(20,16,40,.55);color:#fff;border-color:rgba(255,255,255,.4);backdrop-filter:blur(6px)}
 @media (prefers-reduced-motion:reduce){.bg i{transition:none}}
+/* ===== 오늘의 운세 ===== */
+.kind:focus-visible{outline:3px solid var(--low);outline-offset:2px}
+.linkbtn{background:none;color:#cfc7e6;padding:8px 4px;font:400 12px "Noto Sans KR",sans-serif;text-decoration:underline;margin-top:8px}
+.glass{background:rgba(20,16,40,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:16px;color:#fff}
+.glass h2{color:#fff}
+.hint2{font-size:13px;color:#cfc7e6;margin:2px 0 12px}
+.fcount{text-align:center;margin-top:18px}
+.cnt{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 18px}
+.cnt output{min-width:44px;font:400 44px/1 "Do Hyeon",sans-serif}
+.pm{width:48px;height:48px;border-radius:50%;padding:0;font-size:24px;background:#4452d6;color:#fff}
+.qbtn{min-width:44px;height:44px;border-radius:22px;padding:0 12px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.ok{display:block;width:100%;padding:14px;font-size:17px;border-radius:14px;background:linear-gradient(#e8e23a,#b8b312);color:#262300;box-shadow:0 3px 0 #7d7a0a}
+.ok:disabled{background:#6b6a55;color:#bdbba5;box-shadow:none;opacity:1}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:6px;z-index:5;margin-bottom:12px;font-size:14px;border-color:rgba(214,120,255,.7)}
+.rnd{background:#4452d6;color:#fff;padding:10px 14px;border-radius:12px;flex:none}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding-bottom:84px}
+.tk{position:relative;aspect-ratio:1.5/1;border:0;padding:0;border-radius:6px;background:linear-gradient(#ffa042,#ee6f18);box-shadow:0 2px 0 #a8460a,0 3px 6px rgba(0,0,0,.45);cursor:pointer;color:inherit;transition:transform .12s,box-shadow .12s}
+.tk::before{content:"➤";position:absolute;left:5%;top:14%;bottom:14%;width:21%;background:#fff;border-radius:60% 4px 4px 60%;display:grid;place-items:center;font-size:9px;color:#3340d8}
+.tk::after{content:"";position:absolute;left:32%;right:8%;bottom:16%;height:30%;background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 4px);opacity:.9}
+.tk i{display:none;position:absolute;right:-5px;top:-7px;width:18px;height:18px;border-radius:50%;background:#2fd37a;color:#05331a;font:700 12px/18px sans-serif;text-align:center;font-style:normal;z-index:2}
+.tk.sel{outline:3px solid #3ddc84;box-shadow:0 0 14px 3px rgba(61,220,132,.95),0 3px 6px rgba(0,0,0,.45);transform:translateY(-2px) scale(1.07);z-index:1}
+.tk.sel i{display:block}
+.tk:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.startbar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(10,8,22,.85) 35%);z-index:6}
+.startbar .ok{max-width:488px;margin:0 auto}
+.otop{text-align:center;margin-top:14px}
+.otop b{display:block;font:400 22px "Do Hyeon",sans-serif}
+.otop span{font-size:13px;color:#cfc7e6}
+/* 뜯기 */
+.pk{position:relative;width:min(88vw,360px);aspect-ratio:1.62/1;margin:26px auto 10px;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.pk-under,.pk-wrap,.pk-face{position:absolute;inset:0;border-radius:16px}
+.pk-under{background:#f08a1c;box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.pk-inner{position:absolute;inset:9px;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#4a4a3a,#1b1b1b 75%)}
+.stripe{position:absolute;left:0;right:0;top:0;height:20%;background:linear-gradient(#2d34a8 0 40%,#fff 40% 68%,#2d34a8 68%)}
+.glow{position:absolute;left:50%;top:58%;width:10px;height:10px;border-radius:50%;opacity:0;transform:translate(-50%,-50%)}
+.letter{position:absolute;inset:20% 0 0 0;display:grid;place-items:center;font:400 clamp(70px,24vw,110px)/1 "Do Hyeon",sans-serif;opacity:0;transform:scale(.4)}
+.letter small{font-size:.38em;margin-left:2px;align-self:end;padding-bottom:.2em}
+.letter{grid-auto-flow:column;justify-content:center;align-content:center}
+.t1 .letter{color:#ffd84a;text-shadow:0 0 18px #ff7a1a,0 0 36px #ff3d00,0 3px 0 #a05a00}
+.t2 .letter{color:#cdb8ff;text-shadow:0 0 14px #7a5cff,0 3px 0 #3a2a8f}
+.t3 .letter{color:#f4ea60;text-shadow:0 0 10px #8c8400,0 3px 0 #6b6400}
+.pk.done .letter{animation:pop .55s cubic-bezier(.2,1.5,.4,1) forwards}
+.pk.done.t1 .glow{animation:burst 1s ease-out}
+@keyframes pop{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
+@keyframes burst{0%{opacity:.95;width:10px;height:10px;box-shadow:0 0 0 0 rgba(255,140,30,.9),0 0 30px 10px rgba(255,90,0,.8)}100%{opacity:0;width:240px;height:240px;box-shadow:0 0 60px 20px rgba(255,140,30,0)}}
+.pk-wrap{filter:drop-shadow(-3px 2px 4px rgba(0,0,0,.55));pointer-events:none}
+.pk-face{background:linear-gradient(135deg,#ffa447,#ee6a14);border:3px solid #ffbf80;display:grid;place-items:center;overflow:hidden}
+.pk-face::before{content:"";position:absolute;inset:7px;border:2px solid rgba(255,255,255,.7);border-radius:11px}
+.brand{font:400 28px "Do Hyeon",sans-serif;color:#fff;text-align:center;text-shadow:0 2px 0 rgba(150,60,0,.6);margin-top:-8%}
+.brand small{display:block;font:700 12px "Noto Sans KR",sans-serif;letter-spacing:.3em;opacity:.9}
+.barcode{position:absolute;left:30%;right:10%;bottom:12%;height:22%;background:repeating-linear-gradient(90deg,#fff 0 3px,transparent 3px 6px,#fff 6px 7px,transparent 7px 11px);border-radius:3px}
+.pk-h{position:absolute;top:50%;left:11%;width:46px;height:70px;transform:translate(-50%,-50%);background:#fff;border-radius:24px 10px 10px 24px;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.45);pointer-events:none;animation:nudge 1.6s ease-in-out infinite}
+.pk.moved .pk-h,.pk.done .pk-h{animation:none}
+.pk.done .pk-h{display:none}
+@keyframes nudge{0%,100%{margin-left:0}50%{margin-left:7px}}
+.cntline{text-align:center;color:#fff;font:400 20px "Do Hyeon",sans-serif;margin:6px 0 12px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.obtns{display:flex;gap:12px;margin:12px 0}
+.obtns button{flex:1;padding:14px;border-radius:24px;font-size:16px}
+.yel{background:linear-gradient(#e8e23a,#b8b312);color:#262300;box-shadow:0 3px 0 #7d7a0a}
+.grn{background:linear-gradient(#76e03a,#3da012);color:#0c2a00;box-shadow:0 3px 0 #276b08}
+.rchips{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 6px}
+.rchip{min-width:64px;padding:12px 10px;text-align:center;border-radius:12px;font:400 30px/1 "Do Hyeon",sans-serif;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.3)}
+.rchip.t1{color:#ffd84a;border-color:#ffb02e;box-shadow:0 0 14px rgba(255,140,30,.7)}
+.rchip.t2{color:#cdb8ff}
+.rchip.t3{color:#f4ea60}
+.rchip small{font-size:.5em}
+@media (prefers-reduced-motion:reduce){.pk-h,.pk.done .letter,.pk.done.t1 .glow{animation:none}.pk.done .letter{opacity:1;transform:none}.tk{transition:none}}
 </style>
+
 </head>
 <body>
 <div class="bg" aria-hidden="true"><i></i><i></i></div><div class="bgshade" aria-hidden="true"></div>
 <main>
 <header class="top">
-  <h1>쿠지 스캐너 <small class="ver">v2.3</small></h1>
+  <h1>쿠지 스캐너 <small class="ver">v2.4</small></h1>
   <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
   </button>
@@ -97,12 +165,14 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 
 <!-- 홈 -->
 <section id="home">
-  <p class="sub">어떤 쿠지를 분석할까요?</p>
-  <button class="kind" data-go="ichiban"><b>제일복권</b><span>일번쿠지 · 등수 알파벳이 찍힌 스텁을 붙이는 판</span></button>
-  <button class="kind" data-go="jache"><b>자체쿠지</b><span>가게가 직접 만든 판 · 스티커, 번호 라벨, 알파벳 스텁</span></button>
+  <p class="sub">무엇을 할까요?</p>
+  <button class="kind" data-go="ichiban"><b>이치방쿠지</b></button>
+  <button class="kind" data-go="jache"><b>자체쿠지</b></button>
+  <button class="kind" data-go="fortune"><b>오늘의 운세</b></button>
+  <button class="linkbtn" id="keyEdit">API 키 변경</button>
 </section>
 
-<!-- 제일복권 -->
+<!-- 이치방쿠지 / 자체쿠지 분석 -->
 <section id="scan" hidden>
   <h2 id="scanTitle"></h2>
   <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
@@ -117,6 +187,61 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
   </div>
   <div id="out"></div>
 </section>
+<!-- 오늘의 운세 -->
+<section id="fortune" hidden>
+  <!-- 1) 횟수 선택 -->
+  <div id="fCount" class="glass fcount">
+    <h2>참여 횟수를 정해주세요.</h2>
+    <p class="hint2">최대 5개까지 고를 수 있어요. 무료로 즐기는 모의 쿠지예요.</p>
+    <div class="cnt">
+      <button class="qbtn" data-q="1" aria-label="1개로 설정">1</button>
+      <button class="pm" id="cMinus" aria-label="하나 줄이기">−</button>
+      <output id="cNum" aria-live="polite">1</output>
+      <button class="pm" id="cPlus" aria-label="하나 늘리기">+</button>
+      <button class="qbtn" data-q="5" aria-label="5개로 설정">5</button>
+    </div>
+    <button class="ok" id="cOk">확인</button>
+  </div>
+
+  <!-- 2) 쿠지판 -->
+  <div id="fBoard" hidden>
+    <div class="glass bar" id="bBar">
+      <span id="bCount" role="status" aria-live="polite">0/1개의 쿠폰이 선택되었습니다.</span>
+      <button class="rnd" id="bRand">랜덤 선택</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="startbar"><button class="ok" id="bStart" disabled>시작</button></div>
+  </div>
+
+  <!-- 3) 뜯기 -->
+  <div id="fOpen" hidden>
+    <div class="glass otop"><b>쿠폰을 오픈합니다.</b><span>화살표를 오른쪽으로 천천히 밀어 보세요.</span></div>
+    <div class="pk" id="pk">
+      <div class="pk-under"><div class="pk-inner"><div class="stripe"></div><div class="glow"></div><div class="letter" id="pkLetter"></div></div></div>
+      <div class="pk-wrap"><div class="pk-face" id="pkFace">
+        <div class="brand">오늘의 운세<small>KUJI</small></div>
+        <div class="barcode"></div>
+      </div></div>
+      <div class="pk-h" id="pkH" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#3340d8"><path d="M4 9h9V4l8 8-8 8v-5H4z"/></svg>
+      </div>
+    </div>
+    <p class="cntline" id="oCount" role="status" aria-live="polite"></p>
+    <div class="obtns" id="oBtns">
+      <button class="yel" id="oOpen">쿠폰 오픈</button>
+      <button class="grn" id="oAuto">자동 오픈</button>
+    </div>
+    <button class="ok" id="oNext" hidden>다음 쿠폰</button>
+  </div>
+
+  <!-- 4) 결과 -->
+  <div id="fResult" class="glass" hidden>
+    <h2>오늘의 운세 결과</h2>
+    <p class="hint2" id="rMsg"></p>
+    <div class="rchips" id="rChips"></div>
+    <div class="obtns"><button class="yel" id="rAgain">다시 하기</button><button class="grn" id="rHome">홈으로</button></div>
+  </div>
+</section>
 </main>
 
 <script>
@@ -129,24 +254,37 @@ const LASTRE=/라스트|ラスト|last|^LO$/i;
 
 /* ---------- 화면 전환 ---------- */
 let MODE="ichiban";
-function show(v){$("home").hidden=v!=="home";$("scan").hidden=v==="home";$("homeBtn").hidden=v==="home";window.scrollTo(0,0)}
+function show(v){
+  $("home").hidden=v!=="home";$("scan").hidden=!(v==="ichiban"||v==="jache"||v==="scan");$("fortune").hidden=v!=="fortune";
+  $("homeBtn").hidden=v==="home";syncKey(v);window.scrollTo(0,0);
+}
 function reset(){
   S.tiers=[];S.cut=-1;S.imgs=[];$("out").innerHTML="";
   $("dropText").textContent="회수 부착표 사진 찍기 · 선택하기";
   $("go").disabled=true;say("");
 }
-document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{reset();MODE=b.dataset.go;$("scanTitle").textContent=CFG[MODE].title;show("scan")}));
-$("homeBtn").addEventListener("click",()=>{reset();show("home")});
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{
+  reset();
+  if(b.dataset.go==="fortune"){startFortune();return}
+  MODE=b.dataset.go;$("scanTitle").textContent=CFG[MODE].title;show("scan");
+}));
+$("homeBtn").addEventListener("click",()=>{reset();cancelAnimationFrame(anim);show("home")});
 
-/* ---------- API 키 ---------- */
+/* ---------- API 키 (저장돼 있으면 다시 보이지 않음) ---------- */
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
-if(!getKey())$("keybox").open=true;
+let keyEdit=false;
+function syncKey(v){
+  const need=!getKey()||keyEdit;                       // 키가 없을 때(처음)나 변경을 눌렀을 때만 표시
+  $("keybox").hidden=!need||v==="fortune";
+  if(need)$("keybox").open=true;
+}
 $("saveKey").addEventListener("click",()=>{
   const v=$("key").value.trim();if(!v)return;
-  try{localStorage.setItem("kuji_key",v);$("key").value="";$("keybox").open=false}
+  try{localStorage.setItem("kuji_key",v);$("key").value="";keyEdit=false;syncKey("home")}
   catch(_){say("이 브라우저에서는 키를 저장할 수 없어요.",true)}
 });
-$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}$("keybox").open=true});
+$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}keyEdit=false;syncKey("home")});
+$("keyEdit").addEventListener("click",()=>{keyEdit=true;syncKey("home");$("keybox").scrollIntoView({block:"start"})});
 
 /* ---------- 사진 ---------- */
 // 전체 사진(이미지 1) + 아래쪽 60% 확대(이미지 2): 작은 라벨을 더 또렷하게 보내기 위함
@@ -314,7 +452,7 @@ function parseJache(r){
 }
 
 const CFG={
-  ichiban:{title:"제일복권 분석",prompt:PROMPT_ICHIBAN,tool:TOOL_ICHIBAN,parse:parseIchiban},
+  ichiban:{title:"이치방쿠지 분석",prompt:PROMPT_ICHIBAN,tool:TOOL_ICHIBAN,parse:parseIchiban},
   jache:{title:"자체쿠지 분석",prompt:PROMPT_JACHE,tool:TOOL_JACHE,parse:parseJache}
 };
 
@@ -322,7 +460,7 @@ $("go").addEventListener("click",async()=>{
   $("go").disabled=true;S.tiers=[];S.cut=-1;$("out").innerHTML="";say("분석하는 중이에요…");
   try{
     const key=getKey();
-    if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
+    if(!key){syncKey("scan");say("먼저 위에서 API 키를 저장해 주세요.",true);return}
     const cfg=CFG[MODE];
     const r=await askClaude(key,S.imgs,cfg.prompt,cfg.tool);
     const t=cfg.parse(r);
@@ -357,6 +495,106 @@ $("out").addEventListener("click",e=>{
   else if(b.dataset.i!==undefined){const t=S.tiers[+b.dataset.i];t.remaining=Math.max(0,t.remaining+ +b.dataset.d)}
   render();
 });
+
+
+/* ---------- 오늘의 운세 (무료 모의 쿠지) ---------- */
+const FT={A:2,B:2,C:2,D:2,E:3,F:3,G:18,H:20,I:20};         // 합계 72장 (6 × 12)
+const COLS=6,ROWS=12;
+const F={n:1,board:[],sel:[],idx:0,results:[]};
+const tierClass=t=>"ABCD".includes(t)?"t1":"EF".includes(t)?"t2":"t3";
+const rnd=n=>{const u=new Uint32Array(1);crypto.getRandomValues(u);return Math.floor(u[0]/4294967296*n)}; // 0..n-1
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function fStep(name){["fCount","fBoard","fOpen","fResult"].forEach(id=>$(id).hidden=id!==name);window.scrollTo(0,0)}
+
+function startFortune(){F.n=Math.min(F.n,5)||1;$("cNum").textContent=F.n;fStep("fCount");show("fortune")}
+function setN(n){F.n=Math.max(1,Math.min(5,n));$("cNum").textContent=F.n}
+$("cMinus").addEventListener("click",()=>setN(F.n-1));
+$("cPlus").addEventListener("click",()=>setN(F.n+1));
+document.querySelectorAll(".qbtn").forEach(b=>b.addEventListener("click",()=>setN(+b.dataset.q)));
+$("cOk").addEventListener("click",buildBoard);
+
+function buildBoard(){
+  const tiers=[];Object.entries(FT).forEach(([k,c])=>{for(let i=0;i<c;i++)tiers.push(k)});
+  F.board=shuffle(tiers);F.sel=[];F.idx=0;F.results=[];
+  $("grid").innerHTML=F.board.map((_,i)=>'<button class="tk" data-i="'+i+'" aria-pressed="false" aria-label="쿠폰 '+(i+1)+'번"><i>✓</i></button>').join("");
+  updBoard();fStep("fBoard");
+}
+function updBoard(msg){
+  document.querySelectorAll(".tk").forEach(b=>{const on=F.sel.includes(+b.dataset.i);b.classList.toggle("sel",on);b.setAttribute("aria-pressed",on)});
+  $("bCount").textContent=msg||(F.sel.length+"/"+F.n+"개의 쿠폰이 선택되었습니다.");
+  $("bStart").disabled=F.sel.length!==F.n;
+}
+$("grid").addEventListener("click",e=>{
+  const b=e.target.closest(".tk");if(!b)return;
+  const i=+b.dataset.i,at=F.sel.indexOf(i);
+  if(at>=0)F.sel.splice(at,1);                                  // 이미 고른 것 → 취소
+  else if(F.sel.length<F.n)F.sel.push(i);
+  else{updBoard("최대 "+F.n+"개까지 고를 수 있어요. 하나를 눌러 취소해 주세요.");return}
+  updBoard();
+});
+$("bRand").addEventListener("click",()=>{                        // 누를 때마다 처음부터 다시 무작위로 뽑음
+  const all=[...Array(F.board.length).keys()];
+  F.sel=shuffle(all).slice(0,F.n);updBoard();
+});
+$("bStart").addEventListener("click",()=>{F.idx=0;F.results=[];loadTicket();fStep("fOpen")});
+
+/* 뜯기 */
+const pk=$("pk"),face=$("pkFace"),hdl=$("pkH");
+let P=0,drag=null,isDone=false,anim=0;
+function setP(p){
+  P=Math.max(0,Math.min(1,p));
+  if(P<=0.001)face.style.clipPath="none";
+  else{
+    const ex=P*106-3,N=14,pts=[];
+    for(let i=0;i<=N;i++){const y=i/N*100,dx=(i%2?1.4:-1.4)+(y-50)*0.06;pts.push((ex+dx).toFixed(2)+"% "+y.toFixed(1)+"%")}
+    face.style.clipPath="polygon("+pts.join(",")+",100% 100%,100% 0)";
+  }
+  hdl.style.left=Math.min(96,Math.max(11,P*106+5))+"%";
+  if(P>0.02)pk.classList.add("moved");
+}
+function loadTicket(){
+  cancelAnimationFrame(anim);
+  const t=F.board[F.sel[F.idx]];
+  pk.className="pk "+tierClass(t);
+  $("pkLetter").innerHTML=t+"<small>상</small>";
+  isDone=false;drag=null;setP(0);
+  $("oCount").textContent=(F.idx+1)+" / "+F.n;
+  $("oBtns").hidden=false;$("oNext").hidden=true;
+}
+function finish(){
+  if(isDone)return;isDone=true;setP(1);
+  pk.classList.add("done");
+  F.results.push(F.board[F.sel[F.idx]]);
+  $("oBtns").hidden=true;
+  const last=F.idx>=F.n-1;
+  $("oNext").textContent=last?"결과 보기":"다음 쿠폰";$("oNext").hidden=false;$("oNext").focus({preventScroll:true});
+}
+function autoPeel(ms){
+  cancelAnimationFrame(anim);const p0=P,t0=performance.now(),d=Math.max(250,ms*(1-p0));
+  (function step(t){const k=Math.min(1,(t-t0)/d),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;setP(p0+(1-p0)*e);k<1?anim=requestAnimationFrame(step):finish()})(t0);
+}
+pk.addEventListener("pointerdown",e=>{if(isDone)return;cancelAnimationFrame(anim);drag={x:e.clientX,p:P};pk.setPointerCapture(e.pointerId)});
+pk.addEventListener("pointermove",e=>{if(!drag||isDone)return;const np=drag.p+(e.clientX-drag.x)/(pk.clientWidth*0.8);if(np>P)setP(np)});
+const endDrag=()=>{if(!drag)return;drag=null;if(P>=0.9&&!isDone)autoPeel(250)};
+pk.addEventListener("pointerup",endDrag);pk.addEventListener("pointercancel",endDrag);
+$("oOpen").addEventListener("click",()=>autoPeel(1400));
+$("oAuto").addEventListener("click",()=>{                         // 남은 쿠폰을 한 번에 모두 오픈
+  cancelAnimationFrame(anim);
+  while(F.results.length<F.n){F.results.push(F.board[F.sel[F.results.length]])}
+  showResult();
+});
+$("oNext").addEventListener("click",()=>{if(F.idx>=F.n-1)showResult();else{F.idx++;loadTicket()}});
+
+function showResult(){
+  $("rChips").innerHTML=F.results.map(t=>'<div class="rchip '+tierClass(t)+'">'+t+'<small>상</small></div>').join("");
+  const top=F.results.filter(t=>"ABCD".includes(t)).length;
+  $("rMsg").textContent=top?("A~D상이 "+top+"개 나왔어요! 오늘은 운이 좋네요."):"이번에는 아쉬웠어요. 다시 도전해 보세요.";
+  fStep("fResult");
+}
+$("rAgain").addEventListener("click",()=>fStep("fCount"));
+$("rHome").addEventListener("click",()=>{show("home")});
+
+syncKey("home");
 
 /* ---------- 배경 슬라이드 (5초마다 부드럽게 교체) ---------- */
 (function(){
