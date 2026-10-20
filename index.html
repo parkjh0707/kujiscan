@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v1.0</title>
+<title>쿠지스캔 v1.1</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -62,7 +62,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 </head>
 <body>
 <main>
-<h1>쿠지 스캐너 <small class="ver">v1.0</small></h1>
+<h1>쿠지 스캐너 <small class="ver">v1.1</small></h1>
 <p class="sub">회수 부착표를 찍으면 남은 상품과 확률을 계산해요.</p>
 
 <details class="card" id="keybox">
@@ -110,17 +110,21 @@ $("file").addEventListener("change",async e=>{
   }catch(_){say("사진을 읽지 못했어요. 다른 사진으로 다시 시도해 주세요.",true)}
 });
 
-const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 팔린 티켓은 스텁(검은 반쪽 티켓) 또는 빨간 終了 스티커가 그 칸 위에 붙어 칸을 가립니다. 목표는 등수별로 "덮이지 않은 빈 칸"의 개수, 즉 아직 안 팔린 티켓 수를 구하는 것입니다.
+const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다. 등수(A, B, C…)마다 티켓 한 장당 칸이 하나씩 있고, 팔린 티켓은 스텁(검은 반쪽 티켓) 또는 빨간 終了 스티커가 그 칸 위에 붙어 칸을 가립니다. 스티커가 안 붙은 "빈 칸"이 아직 안 팔린 티켓입니다.
+먼저 all_tiers에 보드에 보이는 모든 등수 글자를 위에서 아래 순서로 빠짐없이 적으세요(라스트원 제외). 그다음 all_tiers의 모든 등수마다 tiers에 항목을 하나씩 만드세요.
+각 등수 항목:
+- min_open: 빈 칸 중 가장 작은 인쇄 번호
+- max_open: 빈 칸 중 가장 큰 인쇄 번호
+- 빈 칸이 하나도 없으면(모두 스티커로 덮임) 둘 다 null
+- open_slots: 빈 칸이 하나라도 보이면 true, 없으면 false
 규칙:
-- 각 칸에는 번호가 인쇄되어 있습니다("あと N枚"처럼 N장 남음 카운트다운이거나, 1, 2, 3… 일련번호). 스티커가 붙지 않은 칸의 번호를 모두 visible 배열에 적으세요. 스티커로 덮여 번호가 안 보이는 칸은 적지 않습니다. 남은 수량은 이 배열의 길이로 계산하므로, 번호의 크기가 아니라 덮이지 않은 칸을 하나도 빠짐없이 적는 것이 중요합니다.
-- 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있습니다. 번호가 18까지 있어도 10칸이 덮였으면 visible은 8개입니다. 번호의 최댓값으로 판단하지 마세요.
-- 칸이 여러 줄이나 여러 블록으로 이어져 있으면 모두 훑으세요(예: 윗줄 1~9, 아랫줄 10~18).
+- 빈 칸의 번호는 보통 끊기지 않고 이어집니다. 스티커를 큰 번호부터 붙이는 가게도 있고 작은 번호부터 붙이는 가게도 있으니, 스티커가 붙은 칸은 보지 말고 스티커가 없는 칸의 번호만 보세요.
+- 칸이 여러 줄이나 여러 블록으로 이어지면 모두 훑으세요. 예: E의 윗줄 1~9와 아랫줄 10번이 스티커로 덮이고 아랫줄 11~18이 비어 있으면 min_open 11, max_open 18.
+- "あと N枚"(N장 남음)로 인쇄된 판은 N이 번호입니다. 빈 칸의 N 중 가장 작은 값과 가장 큰 값을 쓰세요. 예: あと2枚, あと1枚가 둘 다 비어 있으면 min_open 1, max_open 2. 한 블록에 あと6~1, 다른 블록에 あと10~7이 비어 있으면 min_open 1, max_open 10. 스티커 아래에 작은 칸 하나만 남은 C는 min_open 1, max_open 1.
 - 펜으로 손으로 쓴 글씨(예: "1~2", "8~25", "대리판매", 가격, 메모)는 사장님 메모이므로 완전히 무시하세요. 칸 안에 인쇄된 번호만 쓰세요.
-- 스티커가 모든 칸을 덮어 빈 칸이 없으면 visible은 빈 배열입니다(전부 팔림). 그 등수도 목록에 포함하세요.
-- open_slots는 덮이지 않은 칸이 하나라도 보이면 true입니다. 글자가 작아 번호를 못 읽어도 덮이지 않은 칸이 보이면 true로 하세요.
-- 라스트원(ラストワン賞, Last One)은 제외하고, 옆 포스터(다른 쿠지)는 무시하세요.
-예시: 두 칸(1, 2)이 모두 비어 있는 A → {"id":"A","visible":[1,2],"open_slots":true}. 두 칸 모두 스티커로 덮인 B → {"id":"B","visible":[],"open_slots":false}. 18칸 중 1~10번이 덮이고 11~18번이 비어 있는 E → {"id":"E","visible":[11,12,13,14,15,16,17,18],"open_slots":true}.
-등수는 보드에 나온 순서대로 적고, 결과는 report 도구로 제출하세요.`;
+- 글자가 작아 번호를 못 읽어도 빈 칸이 보이면 open_slots를 true로 하고 min_open과 max_open은 null로 두세요.
+- 옆 포스터(다른 쿠지)는 무시하세요.
+결과는 report 도구로 제출하세요.`;
 
 const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
 const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
@@ -135,6 +139,7 @@ $("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key"
 const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
 async function askClaude(key,blob){
   const b64=await toB64(blob);
+  const model=$("acc").checked?MODEL_ACC:MODEL_FAST;
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),40000);
   const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),500);
   try{
@@ -142,9 +147,9 @@ async function askClaude(key,blob){
       method:"POST",signal:ctl.signal,
       headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
       body:JSON.stringify({
-        model:$("acc").checked?MODEL_ACC:MODEL_FAST,
+        model,
         max_tokens:1500,
-        tools:[{name:"report",description:"등수별로 보이는 라벨과 열린 칸 여부를 제출한다",input_schema:{type:"object",properties:{tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},visible:{type:"array",items:{type:"integer"}},open_slots:{type:"boolean"}},required:["id","visible","open_slots"]}}},required:["tiers"]}}],
+        tools:[{name:"report",description:"등수별 빈 칸 범위를 제출한다",input_schema:{type:"object",properties:{all_tiers:{type:"array",items:{type:"string"}},tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},min_open:{type:["integer","null"]},max_open:{type:["integer","null"]},open_slots:{type:"boolean"}},required:["id","min_open","max_open","open_slots"]}}},required:["all_tiers","tiers"]}}],
         tool_choice:{type:"tool",name:"report"},
         messages:[{role:"user",content:[
           {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
@@ -156,7 +161,7 @@ async function askClaude(key,blob){
       if(res.status===401)throw new Error("API 키가 올바르지 않아요");
       if(res.status===429)throw new Error("요청이 너무 많아요. 잠시 후 다시 시도해 주세요");
       if(res.status===529)throw new Error("서버가 바빠요. 잠시 후 다시 시도해 주세요");
-      throw new Error(m||("오류 "+res.status));
+      throw new Error("["+model+"] "+(m||("오류 "+res.status)));
     }
     const d=await res.json();
     const tu=(d.content||[]).find(c=>c.type==="tool_use");
@@ -164,7 +169,7 @@ async function askClaude(key,blob){
       const txt=(d.content||[]).map(c=>c.text||"").join("").slice(0,80);
       throw new Error("결과를 읽지 못했어요 ("+(d.stop_reason||"?")+") "+txt);
     }
-    say("분석 완료 ("+((Date.now()-t0)/1000).toFixed(1)+"초). 숫자가 틀렸다면 아래에서 고칠 수 있어요.");
+    say("분석 완료 ("+model+" · "+((Date.now()-t0)/1000).toFixed(1)+"초). 숫자가 틀렸다면 아래에서 고칠 수 있어요.");
     return tu.input;
   }catch(e){
     if(e.name==="AbortError")throw new Error("40초가 지나 중단했어요. 다시 시도해 주세요");
@@ -178,11 +183,18 @@ $("go").addEventListener("click",async()=>{
     const key=getKey();
     if(!key){$("keybox").open=true;say("먼저 위에서 API 키를 저장해 주세요.",true);return}
     const r=await askClaude(key,S.blob);
-    const t=(r&&r.tiers||[]).map(x=>({id:String(x.id),remaining:(v=>v.size?v.size:(x.open_slots?1:0))(new Set((x.visible||[]).map(Number).filter(n=>n>0)))}))
-      .filter(x=>!/라스트|ラスト|last|^LO$/i.test(x.id));
-    
-if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
+    const LASTRE=/라스트|ラスト|last|^LO$/i;
+    const t=(r.tiers||[]).map(x=>{
+      const lo=Number(x.min_open),hi=Number(x.max_open);
+      return{id:String(x.id),remaining:(lo>0&&hi>=lo)?hi-lo+1:(x.open_slots?1:0)};
+    }).filter(x=>!LASTRE.test(x.id));
+    const order=(r.all_tiers||[]).map(String).filter(id=>!LASTRE.test(id));
+    const miss=order.filter(id=>!t.some(x=>x.id===id));
+    miss.forEach(id=>t.push({id,remaining:0}));
+    if(order.length)t.sort((a,b)=>{const i=order.indexOf(a.id),j=order.indexOf(b.id);return (i<0?99:i)-(j<0?99:j)});
+    if(!t.length){say("등수를 찾지 못했어요. 부착표 전체가 보이게 다시 찍어 보세요.",true);return}
     S.tiers=t;S.cut=-1;render();
+    if(miss.length)say("읽지 못한 등수가 있어요: "+miss.join(", ")+". + − 로 직접 입력해 주세요.",true);
   }catch(e){say("분석에 실패했어요: "+(e&&e.message||"다시 시도해 주세요"),true)}
   finally{$("go").disabled=false}
 });
