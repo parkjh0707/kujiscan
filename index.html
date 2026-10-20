@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
+<link rel="preconnect" href="https://api.anthropic.com">
 <title>쿠지스캔</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
@@ -66,7 +67,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
 <details class="card" id="keybox">
   <summary>API 키 설정</summary>
   <p class="hint">키는 이 폰의 브라우저에만 저장돼요. 코드나 GitHub에는 절대 넣지 마세요.</p>
-  <input type="password" id="key" placeholder="AIza..." autocomplete="off" autocapitalize="off">
+  <input type="password" id="key" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off">
   <div class="keybtns"><button id="saveKey">저장</button><button id="delKey">삭제</button></div>
 </details>
 
@@ -76,7 +77,7 @@ input[type=password]{width:100%;padding:12px;margin:8px 0;border:1px solid var(-
     <span id="dropText">회수 부착표 사진 찍기 · 선택하기</span>
   </label>
   <button class="go" id="go" disabled>사진 분석하기</button>
-  <label class="acc"><input type="checkbox" id="acc"> 정밀 모드 (느리지만 더 정확)</label>
+  <label class="acc"><input type="checkbox" id="acc"> 정밀 모드 (Sonnet · 느리지만 더 정확)</label>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
 </section>
 
@@ -91,7 +92,7 @@ const say=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":
 
 async function shrink(file){
   const b=await createImageBitmap(file);
-  const k=Math.min(1,1600/Math.max(b.width,b.height));
+  const k=Math.min(1,1568/Math.max(b.width,b.height));
   const c=document.createElement("canvas");
   c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);
   c.getContext("2d").drawImage(b,0,0,c.width,c.height);
@@ -119,54 +120,48 @@ const PROMPT=`이 사진은 일번쿠지(一番くじ) 회수 부착표입니다
 예시: A에 "あと2枚"와 "あと1枚"가 보이면 {"id":"A","visible":[2,1],"open_slots":true}, 스텁 하나가 유일한 칸을 덮고 있는 C는 {"id":"C","visible":[],"open_slots":false}, 스텁 아래에 작은 주황 탭 "あと1枚"가 남은 C는 {"id":"C","visible":[1],"open_slots":true}.
 등수는 보드에 나온 순서대로 적으세요. JSON만 출력하세요: {"tiers":[{"id":"A","visible":[2,1],"open_slots":true}]}`;
 
-const MODEL="gemini-2.5-flash"; // 빠른 기본 모델. 모델명이 바뀌면 여기만 수정
-const FALLBACK="gemini-flash-latest"; // 위 모델이 없을 때 대신 사용
-const getKey=()=>{try{return localStorage.getItem("kuji_gkey")||""}catch(_){return ""}};
+const MODEL_FAST="claude-haiku-5-5",MODEL_ACC="claude-sonnet-5-5"; // 모델명이 바뀌면 여기만 수정
+const getKey=()=>{try{return localStorage.getItem("kuji_key")||""}catch(_){return ""}};
 if(!getKey())$("keybox").open=true;
 $("saveKey").addEventListener("click",()=>{
   const v=$("key").value.trim();if(!v)return;
-  try{localStorage.setItem("kuji_gkey",v);$("key").value="";$("keybox").open=false;say("키를 저장했어요.")}
+  try{localStorage.setItem("kuji_key",v);$("key").value="";$("keybox").open=false;say("키를 저장했어요.")}
   catch(_){say("이 브라우저에서는 키를 저장할 수 없어요.",true)}
 });
-$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_gkey")}catch(_){}say("키를 삭제했어요.")});
+$("delKey").addEventListener("click",()=>{try{localStorage.removeItem("kuji_key")}catch(_){}say("키를 삭제했어요.")});
 
 const toB64=b=>new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(String(f.result).split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
-const callGemini=(model,key,b64,cfg,signal)=>fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
-  method:"POST",signal,
-  headers:{"content-type":"application/json","x-goog-api-key":key},
-  body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:"image/jpeg",data:b64}},{text:PROMPT}]}],generationConfig:cfg})
-});
 async function askClaude(key,blob){
   const b64=await toB64(blob);
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),45000);
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),40000);
   const t0=Date.now(),tick=setInterval(()=>say("분석하는 중이에요… "+Math.round((Date.now()-t0)/1000)+"초"),500);
   try{
-    const base={temperature:0,responseMimeType:"application/json"};
-    // 기본은 생각 시간 0(빠름). 정밀 모드를 켜면 생각 시간을 조금 줌
-    const withT={...base,thinkingConfig:{thinkingBudget:$("acc").checked?1024:0}};
-    const tries=[[MODEL,withT],[MODEL,base],[FALLBACK,base]];
-    let res;
-    for(const [m,c] of tries){
-      res=await callGemini(m,key,b64,c,ctl.signal);
-      if(res.ok)break;
-      const t=await res.clone().text();
-      if(!(res.status===404||(res.status===400&&/think/i.test(t))))break;
-    }
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",signal:ctl.signal,
+      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({
+        model:$("acc").checked?MODEL_ACC:MODEL_FAST,
+        max_tokens:400,
+        messages:[{role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
+          {type:"text",text:PROMPT}]}]
+      })
+    });
     if(!res.ok){
       let m="";try{m=(await res.json()).error.message}catch(_){}
-      if(res.status===429)throw new Error("무료 사용 한도에 걸렸어요. 잠시 후 다시 시도해 주세요");
-      if(res.status===503)throw new Error("구글 서버가 바빠요. 잠시 후 다시 시도해 주세요");
-      if(res.status===400&&/API key/i.test(m)||res.status===403)throw new Error("API 키가 올바르지 않거나 권한이 없어요");
+      if(res.status===401)throw new Error("API 키가 올바르지 않아요");
+      if(res.status===429)throw new Error("요청이 너무 많아요. 잠시 후 다시 시도해 주세요");
+      if(res.status===529)throw new Error("서버가 바빠요. 잠시 후 다시 시도해 주세요");
       throw new Error(m||("오류 "+res.status));
     }
     const d=await res.json();
-    const txt=((d.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+    const txt=(d.content||[]).map(c=>c.text||"").join("");
     const j=txt.match(/\{[\s\S]*\}/);
     if(!j)throw new Error("결과를 읽지 못했어요");
     say("분석 완료 ("+((Date.now()-t0)/1000).toFixed(1)+"초). 숫자가 틀렸다면 아래에서 고칠 수 있어요.");
     return JSON.parse(j[0]);
   }catch(e){
-    if(e.name==="AbortError")throw new Error("45초가 지나 중단했어요. 다시 시도해 주세요");
+    if(e.name==="AbortError")throw new Error("40초가 지나 중단했어요. 다시 시도해 주세요");
     throw e;
   }finally{clearTimeout(timer);clearInterval(tick)}
 }
