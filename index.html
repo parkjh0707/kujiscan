@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1a1530">
 <link rel="preconnect" href="https://api.anthropic.com">
-<title>쿠지스캔 v2.9</title>
+<title>쿠지스캔 v2.10</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap">
 <style>
 :root{--bg:#f6f2ee;--card:#fff;--ink:#231c33;--mute:#7a7088;--line:#e4dcd4;--top:#e5483b;--low:#2f6fd6;--on:#fff;
@@ -195,7 +195,7 @@ html{touch-action:manipulation}
 <div class="bg" aria-hidden="true"><i></i><i></i></div><div class="bgshade" aria-hidden="true"></div>
 <main>
 <header class="top">
-  <h1>쿠지 스캐너 <small class="ver">v2.9</small></h1>
+  <h1>쿠지 스캐너 <small class="ver">v2.10</small></h1>
   <button class="icon" id="homeBtn" aria-label="홈으로" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
   </button>
@@ -390,17 +390,22 @@ const PROMPT_ICHIBAN=`이 사진은 일번쿠지(一番くじ, 이치방쿠지)�
   (가) countdown: 칸에 "あと N枚"(N장 남음)가 적혀 있고 왼쪽에서 오른쪽으로 갈수록 숫자가 줄어듭니다(예: 10 9 8 … 1). 스텁이 큰 번호부터 가리므로, 보이는 라벨 중 가장 큰 N이 남은 수량입니다.
   (나) ordinal: 칸에 "N枚目"(N번째 장)이 적혀 있고 왼쪽에서 오른쪽으로 갈수록 숫자가 늘어납니다(예: 7 8 9 10). 스텁이 작은 번호부터 가리므로, 보이는 라벨의 (가장 큰 번호 − 가장 작은 번호 + 1)이 남은 수량입니다.
 ■ 읽을 것(등수마다)
-- first_label: 스텁에 가려지지 않고 보이는 번호 라벨 중 "읽는 순서(윗줄부터, 각 줄은 왼쪽에서 오른쪽)로 가장 먼저 나오는 번호"
-- last_label: 같은 순서로 "가장 마지막에 나오는 번호"
+- labels: 그 등수에서 스텁에 가려지지 않고 눈에 보이는 번호 라벨(칸 안에 인쇄된 숫자)을 빠짐없이 전부 적은 배열. 위쪽 줄부터, 각 줄은 왼쪽에서 오른쪽 순서. 그 등수의 모든 줄과 줄 아래·옆의 별도 상자까지 포함합니다. 보이는 숫자 하나하나를 적으세요(건너뛰거나 추정해서 채우지 마세요). 하나도 안 보이면 빈 배열.
 - stubs: 그 등수 줄에 붙어 있는 검은 스텁 개수(겹쳐 있어도 알파벳 글자 하나를 1개로 셉니다). ordinal 판에서만 필요하고, 자신 없으면 null
-- open_slots: 스텁에 덮이지 않은 칸이 하나라도 보이면 true
+- open_slots: 번호가 인쇄된 덮이지 않은 칸을 실제로 확인했으면 true
 - ended: 그 등수 옆에 빨간 終了 스티커가 붙어 있으면 true
 예시(번호 읽기):
-- countdown 판의 E 줄: 스텁 몇 장이 높은 번호를 가리고 "あと10枚 9 8 7 / 6 5 4 3 / 2 1"이 보이면 first_label 10, last_label 1 (남은 10장).
-- countdown 판에서 큰 그림 옆 주황 탭에 "あと2枚"와 "あと1枚"가 보이면 first_label 2, last_label 1. "あと1枚"만 보이면 둘 다 1.
-- ordinal 판의 F 줄: 스텁 F가 6장 붙어 있고 "7枚目 8 9 10"이 보이면 first_label 7, last_label 10, stubs 6 (남은 4장).
-- ordinal 판의 H 줄이 두 줄이고 윗줄이 스텁에 완전히 덮이고 아랫줄에 "16枚目 17 … 22"만 보이면 first_label 16, last_label 22.
-- 스텁이 줄을 완전히 덮어 번호가 하나도 안 보이면 first_label과 last_label은 null, open_slots는 false(전부 팔림).
+- countdown 판의 E: 윗줄이 스텁에 가려 "あと10枚 9 8 7"이 보이고 이어서 "6 5 4 3 / 2 1"이 보이면 labels [10,9,8,7,6,5,4,3,2,1] (남은 10장).
+- countdown 판에서 큰 그림 옆 주황 탭에 "あと2枚"와 "あと1枚"가 보이면 labels [2,1]. "あと1枚"만 보이면 [1].
+- ordinal 판의 F: 스텁 F가 6장 붙어 있고 "7枚目 8 9 10"이 보이면 labels [7,8,9,10], stubs 6 (남은 4장).
+- ordinal 판의 H가 두 줄이고 윗줄은 스텁에 완전히 덮이고 아랫줄에 "16枚目 17 … 22"만 보이면 labels [16,17,18,19,20,21,22].
+- ordinal 판의 B: 스텁 B가 1장 붙어 있고 그 옆 탭에 "2枚目"이 보이면 labels [2], stubs 1 (남은 1장). 같은 판의 A: 스텁 A가 2장 겹쳐 탭을 모두 덮어 번호가 안 보이면 labels [] (남은 0장).
+- 스텁이 칸을 완전히 덮어 번호가 하나도 안 보이면 labels [], open_slots false(전부 팔림).
+- 등수의 줄이 두 줄이면 어느 한 줄에서라도 흰 칸의 숫자가 보이면 labels에 넣습니다(예: 윗줄이 스텁으로 덮여도 아랫줄 오른쪽에 "5 6 7 8"이 보이면 labels [5,6,7,8]). 가장 아래쪽 등수(마지막 알파벳)도 빠뜨리지 말고 아래쪽 확대 사진에서 반드시 확인하세요.
+■ 등수 하나당 항목은 정확히 하나
+- 한 등수의 줄이 두 줄 이상이거나 줄 아래·옆에 번호 상자가 따로 더 있어도 tiers에는 그 등수를 한 번만 적습니다. labels는 그 등수의 모든 줄·상자를 통틀어 적으세요(예: E 줄이 "6 5 4 3 2 1"이고 그 아래 별도 상자에 "10 9 8 7"이 있으면 10까지 모두 적습니다).
+- 스텁이 칸 줄 아래쪽에 따로 있는 상자들(예: "あと14枚 13 12")도 같은 등수의 일부입니다. 놓치지 말고 전체 사진·확대 사진에서 줄 아래까지 샅샅이 찾으세요.
+- 어떤 등수의 모든 칸이 검은 스텁(그 등수 알파벳이 찍힘)으로 덮여 있으면 팔린 것입니다: labels는 빈 배열, open_slots는 false. 다른 등수의 번호를 가져와 채우지 마세요(번호는 그 등수의 보이는 칸에서만 읽습니다). open_slots는 번호가 인쇄된 덮이지 않은 칸을 실제로 눈으로 확인했을 때만 true입니다.
 ■ 주의
 - 번호는 칸 안에 인쇄된 작은 숫자입니다. 펜으로 쓴 손글씨(가격, 메모, 번호 범위), 상품 설명, 사진 위 워터마크 글자는 번호가 아닙니다.
 - 스텁 가장자리에 반쯤 가려진 번호는 이웃한 번호의 규칙(1씩 증가/감소)으로 판단하세요.
@@ -411,9 +416,9 @@ const TOOL_ICHIBAN={name:"report",description:"판의 번호 방식과 등수별
   properties:{board_title:{type:"string"},numbering:{type:"string",enum:["countdown","ordinal"]},
   all_tiers:{type:"array",items:{type:"string"}},
   tiers:{type:"array",items:{type:"object",properties:{id:{type:"string"},
-    first_label:{type:["integer","null"]},last_label:{type:["integer","null"]},
+    labels:{type:"array",items:{type:"integer"}},
     stubs:{type:["integer","null"]},open_slots:{type:"boolean"},ended:{type:"boolean"}},
-    required:["id","first_label","last_label","stubs","open_slots","ended"]}}},
+    required:["id","labels","stubs","open_slots","ended"]}}},
   required:["board_title","numbering","all_tiers","tiers"]}};
 
 async function askClaude(key,imgs,prompt,tool){
@@ -450,7 +455,22 @@ async function askClaude(key,imgs,prompt,tool){
 }
 
 function parseIchiban(r){
-  const T=(r.tiers||[]).filter(x=>!LASTRE.test(String(x.id)));
+  const T0=(r.tiers||[]).filter(x=>!LASTRE.test(String(x.id))).map(x=>{
+    if(!Array.isArray(x.labels))return x;
+    const L=x.labels.map(Number).filter(v=>Number.isFinite(v)&&v>0);
+    return Object.assign({},x,{first_label:L.length?L[0]:null,last_label:L.length?L[L.length-1]:null,_hi:L.length?Math.max(...L):0,_lo:L.length?Math.min(...L):0});
+  });
+  const T=[],seen={};
+  T0.forEach(x=>{const k=String(x.id).trim();const o=seen[k];
+    if(!o){const c=Object.assign({},x,{id:k});seen[k]=c;T.push(c);return}
+    const n=v=>{const m=Math.round(Number(v));return Number.isFinite(m)&&m>0?m:null};
+    const f=[o.first_label,x.first_label].map(n).filter(Boolean),l=[o.last_label,x.last_label].map(n).filter(Boolean);
+    o.first_label=f.length?f[0]:null;o.last_label=l.length?l[l.length-1]:null;
+    const hi=Math.max(0,...f,...l),lo=Math.min(...f.concat(l).length?f.concat(l):[0]);
+    o._hi=Math.max(o._hi||0,x._hi||0,hi);o._lo=Math.min(...[o._lo,x._lo,lo].filter(Boolean).concat([9999]));if(o._lo===9999)o._lo=0;
+    o.open_slots=o.open_slots||x.open_slots;o.ended=o.ended||x.ended;
+    const a=Number(o.stubs),b=Number(x.stubs);o.stubs=(Number.isFinite(a)&&Number.isFinite(b))?a+b:(o.stubs??x.stubs);
+  });
   const num=v=>{const n=Math.round(Number(v));return v!==null&&v!==undefined&&Number.isFinite(n)&&n>0?n:null};
   // 번호 방식: 등수들의 (첫 라벨 → 끝 라벨) 방향으로 판 전체를 투표해 정한다. 모델이 말한 방식은 동점일 때만 사용
   let down=0,up=0;
@@ -461,7 +481,7 @@ function parseIchiban(r){
     const a=num(x.first_label),b=num(x.last_label),st=num(x.stubs)!==null?num(x.stubs):(Number(x.stubs)===0?0:null);
     let rem=0,warn="",info="";
     if(a||b){
-      const hi=Math.max(a||0,b||0),lo=Math.min(a||hi,b||hi);
+      const hi=Math.max(a||0,b||0,x._hi||0),lo=Math.min(a||hi,b||hi,x._lo||hi);
       if(style==="countdown"){
         rem=hi;info="보이는 번호 "+hi+(lo<hi?" → "+lo:"");
         if(lo>2)warn="번호가 1 근처까지 이어지지 않아요 (가장 작은 번호 "+lo+")";
